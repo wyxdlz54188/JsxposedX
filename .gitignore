@@ -28,3 +28,7 @@ coverage/
 *.log
 *.swp
 .DS_Store
+
+
+ios/Flutter/Generated.xcconfig
+ios/Flutter/flutter_export_environment.sh
