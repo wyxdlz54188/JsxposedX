@@ -2,6 +2,7 @@
 
 - 英文文档：[`README_EN.md`](README_EN.md)
 - 默认 README：[`README.md`](README.md)
+- 发布版本：[`Download`](https://jsxposed.org)
 
 JsxposedX 是一个面向 Xposed/LSPosed 和 Frida 工作流的 Flutter Android 应用。它把 Flutter UI 层、Android 侧的 Xposed Hook、LSPosed service 集成、原生 bridge 模块、共享 IDE 运行配置，以及 PowerShell 安装调试脚本放在同一个仓库里。
 

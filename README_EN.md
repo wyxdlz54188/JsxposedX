@@ -2,7 +2,11 @@
 
 - Default README: [`README.md`](README.md)
 - Chinese documentation: [`README_CN.md`](README_CN.md)
-JsxposedX is a Flutter Android application for Xposed/LSPosed and Frida workflows. It combines a Flutter UI layer with Android-side Xposed hooks, LSPosed service integration, native bridge modules, shared IDE run configurations, and PowerShell-based install/debug scripts.
+- Release：[`Download`](https://jsxposed.org)
+  
+JsxposedX is a Flutter Android application for Xposed/LSPosed and Frida workflows. It combines a
+  Flutter UI layer with Android-side Xposed hooks, LSPosed service integration, native bridge
+  modules, shared IDE run configurations, and PowerShell-based install/debug scripts.
 
 ## Project Overview
 
@@ -20,7 +24,8 @@ JsxposedX is a Flutter Android application for Xposed/LSPosed and Frida workflow
 - Quick Functions for common hook-related switches
 - Crypto audit log and JS editor
 - SO analysis pages with `ELF Info`, `Exports`, `Imports`, `JNI`, `Strings`, and `Sections`
-- Built-in manuals in `assets/raws/JsxposedX_API.md`, `assets/raws/JsxposedX_API_en.md`, `assets/raws/Frida_API.md`, and `assets/raws/Frida_API_en.md`
+- Built-in manuals in `assets/raws/JsxposedX_API.md`, `assets/raws/JsxposedX_API_en.md`,
+  `assets/raws/Frida_API.md`, and `assets/raws/Frida_API_en.md`
 - `Repository` tab is currently a placeholder page
 
 ## Quick Functions
@@ -43,11 +48,15 @@ This repository is not only a Flutter UI project.
 
 - `android/app/src/main/AndroidManifest.xml` declares Xposed module metadata
 - `android/app/src/main/assets/xposed_init` points to `com.jsxposed.x.MainHook`
-- `android/app/src/main/resources/META-INF/xposed/module.prop` sets `minApiVersion=53`, `targetApiVersion=100`, and `staticScope=false`
+- `android/app/src/main/resources/META-INF/xposed/module.prop` sets `minApiVersion=53`,
+  `targetApiVersion=100`, and `staticScope=false`
 - `android/app/src/main/kotlin/com/jsxposed/x/App.kt` initializes the LSPosed service
-- `android/app/src/main/kotlin/com/jsxposed/x/NativeProvider.kt` registers native bridge modules for `Pinia`, `StatusManagement`, `App`, `Project`, `ApkAnalysis`, `SoAnalysis`, `LSPosed`, and `ZygiskFrida`
+- `android/app/src/main/kotlin/com/jsxposed/x/NativeProvider.kt` registers native bridge modules for
+  `Pinia`, `StatusManagement`, `App`, `Project`, `ApkAnalysis`, `SoAnalysis`, `LSPosed`, and
+  `ZygiskFrida`
 
-Because of that, installation and verification involve the Android/Xposed side as well as the Flutter side.
+Because of that, installation and verification involve the Android/Xposed side as well as the
+Flutter side.
 
 ## Requirements
 
@@ -62,7 +71,8 @@ Because of that, installation and verification involve the Android/Xposed side a
 - `lib/`: Flutter UI, routes, providers, and feature pages
 - `lib/pigeons/`: Pigeon bridge definitions
 - `lib/generated/`: generated Dart bridge code
-- `android/app/src/main/kotlin/com/jsxposed/x/`: Android app code, Xposed hooks, and native bridge implementations
+- `android/app/src/main/kotlin/com/jsxposed/x/`: Android app code, Xposed hooks, and native bridge
+  implementations
 - `android/app/src/main/assets/xposed_init`: Xposed entry list
 - `android/app/src/main/resources/META-INF/xposed/module.prop`: Xposed module properties
 - `.buildScript/`: shared PowerShell scripts for code generation and debug install
@@ -99,7 +109,8 @@ It:
 
 - runs `:app:installDebug`
 - syncs `versionName` and `versionCode` from `pubspec.yaml` into `android/local.properties`
-- resolves the target device from `-DeviceId`, `ANDROID_SERIAL`, the Android Studio selected device, or a single connected `adb` device
+- resolves the target device from `-DeviceId`, `ANDROID_SERIAL`, the Android Studio selected device,
+  or a single connected `adb` device
 - waits after install for package replacement broadcasts and LSPosed rescan
 - can force-stop the app, launch it, and run `flutter attach`
 
@@ -117,7 +128,8 @@ Useful switches:
 .\.buildScript\run_install_debug.ps1 -DeviceId <serial>
 ```
 
-This script is used for the Xposed/LSPosed debug install flow. It is not a replacement for normal Flutter hot reload.
+This script is used for the Xposed/LSPosed debug install flow. It is not a replacement for normal
+Flutter hot reload.
 
 ## Standard Build
 
@@ -128,7 +140,8 @@ flutter build apk --debug
 flutter build apk --release
 ```
 
-`.buildScript/run_install_debug.ps1` handles the install, launch, and attach flow for device-side verification.
+`.buildScript/run_install_debug.ps1` handles the install, launch, and attach flow for device-side
+verification.
 
 ## Release Signing
 
@@ -147,10 +160,12 @@ flutter pub get
 flutter attach
 ```
 
-After installation, continue verification on the device in the LSPosed/Xposed or Zygisk/Frida environment.
+After installation, continue verification on the device in the LSPosed/Xposed or Zygisk/Frida
+environment.
 
 ## Notes
 
 - The shared scripts in this repository are PowerShell scripts.
 - If you do not use Windows, follow the same steps manually.
-- `flutter run` is still available for normal Flutter iteration, while this repository also keeps an Android/Xposed install flow for module verification.
+- `flutter run` is still available for normal Flutter iteration, while this repository also keeps an
+  Android/Xposed install flow for module verification.
