@@ -42,6 +42,7 @@
 
 
     <application
+        android:description="@string/xposeddescription"
         android:name=".App"
         android:icon="@mipmap/ic_launcher"
         android:largeHeap="true"
@@ -78,7 +79,7 @@
             android:value="true" />
         <meta-data
             android:name="xposeddescription"
-            android:value="交流社区:www.muxue.pro" />
+            android:value="@string/xposeddescription" />
         <meta-data
             android:name="xposedminversion"
             android:value="89" />
