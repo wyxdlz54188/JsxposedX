@@ -30,7 +30,7 @@ coverage/
 *.swp
 .DS_Store
 
-
+.bin/
 ios/Flutter/Generated.xcconfig
 ios/Flutter/flutter_export_environment.sh
 /.codex_tmp_alex110119_JsxposedX/
