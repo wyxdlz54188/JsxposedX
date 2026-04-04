@@ -7,7 +7,7 @@
 
 import 'package:JsxposedX/core/network/http_service.dart';
 import 'package:JsxposedX/core/utils/procedure_utils.dart';
-import 'package:JsxposedX/feature/home/data/datasources/check_query_datasource.dart';
+import 'package:JsxposedX/features/home/data/datasources/check_query_datasource.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
