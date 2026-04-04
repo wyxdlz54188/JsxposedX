@@ -20,6 +20,14 @@
   "@repository": {
     "description": "Repository"
   },
+  "news": "News",
+  "@news": {
+    "description": "News tab"
+  },
+  "star": "Star",
+  "@star": {
+    "description": "Star tab"
+  },
   "settings": "Settings",
   "@settings": {
     "description": "Settings page"

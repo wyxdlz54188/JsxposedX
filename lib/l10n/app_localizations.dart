@@ -128,6 +128,18 @@ abstract class AppLocalizations {
   /// **'仓库'**
   String get repository;
 
+  /// 最新标签
+  ///
+  /// In zh, this message translates to:
+  /// **'最新'**
+  String get news;
+
+  /// 收藏标签
+  ///
+  /// In zh, this message translates to:
+  /// **'收藏'**
+  String get star;
+
   /// 设置页面
   ///
   /// In zh, this message translates to:

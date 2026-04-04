@@ -25,6 +25,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get repository => 'Repository';
 
   @override
+  String get news => 'News';
+
+  @override
+  String get star => 'Star';
+
+  @override
   String get settings => 'Settings';
 
   @override

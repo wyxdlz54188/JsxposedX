@@ -34,7 +34,7 @@ class RepositoryQueryDatasource {
   Future<PostDetailDto> getScriptDetail({required int id}) async {
     try {
       final result = await _httpService.get(_postDetailApi(postId: id));
-      return PostDetailDto.fromJson(result.data);
+      return PostDetailDto.fromJson(result.data["data"]);
     } catch (e) {
       throw Exception(e);
     }

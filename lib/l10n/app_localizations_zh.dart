@@ -24,6 +24,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get repository => '仓库';
 
   @override
+  String get news => '最新';
+
+  @override
+  String get star => '收藏';
+
+  @override
   String get settings => '设置';
 
   @override

@@ -20,6 +20,14 @@
   "@repository": {
     "description": "仓库"
   },
+  "news": "最新",
+  "@news": {
+    "description": "最新标签"
+  },
+  "star": "收藏",
+  "@star": {
+    "description": "收藏标签"
+  },
   "settings": "设置",
   "@settings": {
     "description": "设置页面"
