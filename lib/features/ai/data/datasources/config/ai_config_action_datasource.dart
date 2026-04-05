@@ -8,16 +8,19 @@ import 'package:JsxposedX/features/ai/domain/constants/builtin_ai_config.dart';
 class AiConfigActionDatasource {
   static const _currentConfigStorageKey = "ai_config";
   static const _configListStorageKey = "ai_config_list";
-  static const _builtinApiKeyStorageKey = "ai_builtin_api_key";
 
   final PiniaStorage _storage;
 
-  AiConfigActionDatasource({required PiniaStorage storage}) : _storage = storage;
+  AiConfigActionDatasource({required PiniaStorage storage})
+    : _storage = storage;
 
   /// 保存当前 AI 配置
   Future<void> saveConfig(AiConfigDto config) async {
-    if (config.id == builtinAiConfigId) {
-      await _storage.setString(_builtinApiKeyStorageKey, config.apiKey);
+    if (isBuiltinAiConfigId(config.id)) {
+      await _storage.setString(
+        builtinApiKeyStorageKeyForId(config.id),
+        config.apiKey,
+      );
     }
     await _storage.setString(
       _currentConfigStorageKey,
@@ -35,7 +38,7 @@ class AiConfigActionDatasource {
       final List<dynamic> jsonList = jsonDecode(configListStr);
       return jsonList
           .map((json) => AiConfigDto.fromJson(json))
-          .where((config) => config.id != builtinAiConfigId)
+          .where((config) => !isBuiltinAiConfigId(config.id))
           .toList();
     } catch (e) {
       return [];
@@ -59,7 +62,7 @@ class AiConfigActionDatasource {
 
   /// 更新配置列表中的某个配置
   Future<void> updateConfig(AiConfigDto config) async {
-    if (config.id == builtinAiConfigId) {
+    if (isBuiltinAiConfigId(config.id)) {
       await saveConfig(config);
       return;
     }
@@ -73,7 +76,7 @@ class AiConfigActionDatasource {
 
   /// 删除配置
   Future<void> deleteConfig(String id) async {
-    if (id == builtinAiConfigId) {
+    if (isBuiltinAiConfigId(id)) {
       return;
     }
     final list = await getConfigList();
@@ -83,25 +86,33 @@ class AiConfigActionDatasource {
 
   /// 切换配置（将指定配置设为当前配置）
   Future<void> switchConfig(String id) async {
-    if (id == builtinAiConfigId) {
-      final builtinApiKey = await _storage.getString(_builtinApiKeyStorageKey);
-      await saveConfig(
-        AiConfigDto(
-          id: builtinAiConfigId,
-          name: builtinAiConfigName,
-          apiKey: builtinApiKey,
-          apiUrl: builtinAiConfigBaseUrl,
-          moduleName: 'gpt-5.4',
-          maxToken: 4096,
-          temperature: 1.0,
-          memoryRounds: 6,
-          apiType: 'openaiResponses',
-        ),
+    final builtinSpec = getBuiltinAiConfigSpecById(id);
+    if (builtinSpec != null) {
+      final builtinApiKey = await _storage.getString(
+        builtinSpec.apiKeyStorageKey,
       );
+      await saveConfig(_builtinConfigDto(builtinSpec, apiKey: builtinApiKey));
       return;
     }
     final list = await getConfigList();
     final config = list.firstWhere((c) => c.id == id);
     await saveConfig(config);
+  }
+
+  AiConfigDto _builtinConfigDto(
+    BuiltinAiConfigSpec spec, {
+    String apiKey = '',
+  }) {
+    return AiConfigDto(
+      id: spec.id,
+      name: spec.name,
+      apiKey: apiKey,
+      apiUrl: spec.apiUrl,
+      moduleName: spec.moduleName,
+      maxToken: spec.maxToken,
+      temperature: spec.temperature,
+      memoryRounds: spec.memoryRounds,
+      apiType: spec.apiType.name,
+    );
   }
 }

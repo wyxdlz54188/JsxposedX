@@ -8,15 +8,23 @@ import 'package:uuid/uuid.dart';
 /// AI 配置查询数据源
 class AiConfigQueryDatasource {
   static const _currentConfigStorageKey = "ai_config";
-  static const _builtinApiKeyStorageKey = "ai_builtin_api_key";
 
   final PiniaStorage _storage;
 
   AiConfigQueryDatasource({required PiniaStorage storage}) : _storage = storage;
 
-  Future<AiConfigDto> getBuiltinConfig() async {
-    final builtinApiKey = await _storage.getString(_builtinApiKeyStorageKey);
-    return _builtinConfigDto(apiKey: builtinApiKey);
+  Future<AiConfigDto> getBuiltinConfig([String id = builtinAiConfigId]) async {
+    final spec = getBuiltinAiConfigSpecById(id) ?? defaultBuiltinAiConfigSpec;
+    final builtinApiKey = await _storage.getString(spec.apiKeyStorageKey);
+    return _builtinConfigDto(spec, apiKey: builtinApiKey);
+  }
+
+  Future<List<AiConfigDto>> getBuiltinConfigs() async {
+    final result = <AiConfigDto>[];
+    for (final spec in builtinAiConfigSpecs) {
+      result.add(await getBuiltinConfig(spec.id));
+    }
+    return result;
   }
 
   /// 获取 AI 配置
@@ -25,8 +33,8 @@ class AiConfigQueryDatasource {
     if (configStr.isNotEmpty) {
       try {
         final config = AiConfigDto.fromJson(jsonDecode(configStr));
-        if (config.id == builtinAiConfigId) {
-          final builtinConfig = await getBuiltinConfig();
+        if (isBuiltinAiConfigId(config.id)) {
+          final builtinConfig = await getBuiltinConfig(config.id);
           return builtinConfig.copyWith(
             apiKey: builtinConfig.apiKey.isNotEmpty
                 ? builtinConfig.apiKey
@@ -56,17 +64,20 @@ class AiConfigQueryDatasource {
     return getBuiltinConfig();
   }
 
-  AiConfigDto _builtinConfigDto({String apiKey = ''}) {
+  AiConfigDto _builtinConfigDto(
+    BuiltinAiConfigSpec spec, {
+    String apiKey = '',
+  }) {
     return AiConfigDto(
-      id: builtinAiConfigId,
-      name: builtinAiConfigName,
+      id: spec.id,
+      name: spec.name,
       apiKey: apiKey,
-      apiUrl: builtinAiConfigBaseUrl,
-      moduleName: 'gpt-5.4',
-      maxToken: 4096,
-      temperature: 1.0,
-      memoryRounds: 6,
-      apiType: 'openaiResponses',
+      apiUrl: spec.apiUrl,
+      moduleName: spec.moduleName,
+      maxToken: spec.maxToken,
+      temperature: spec.temperature,
+      memoryRounds: spec.memoryRounds,
+      apiType: spec.apiType.name,
     );
   }
 }

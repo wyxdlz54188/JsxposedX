@@ -1287,8 +1287,7 @@ class AiChatAction extends _$AiChatAction {
   }
 
   bool _shouldUsePadiChatOptions(AiConfig config) {
-    return config.apiType == AiApiType.openaiResponses &&
-        config.id == builtinAiConfigId;
+    return shouldUseBuiltinPadiOptions(config);
   }
 
   Future<void> _saveChatHistory() async {

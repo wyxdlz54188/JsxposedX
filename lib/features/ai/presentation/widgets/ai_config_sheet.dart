@@ -39,7 +39,8 @@ class AIConfigSheet extends HookConsumerWidget {
               children: [
                 TextButton(
                   onPressed: () => UrlHelper.openUrlInBrowser(
-                    url: "https://www.yuque.com/ababa-haoqq/hake3e/npt913l7r1goxsoi?singleDoc",
+                    url:
+                        "https://www.yuque.com/ababa-haoqq/hake3e/npt913l7r1goxsoi?singleDoc",
                   ),
                   child: Text(context.l10n.aiTutorial),
                 ),
@@ -110,6 +111,10 @@ class AIConfigSheet extends HookConsumerWidget {
       'memory_rounds': config.memoryRounds,
       'api_type': config.apiType.name,
     };
+  }
+
+  static BuiltinAiConfigSpec? _builtinSpecOf(AiConfig config) {
+    return getBuiltinAiConfigSpecById(config.id);
   }
 
   /// 处理测试连接逻辑
@@ -219,6 +224,7 @@ class AIConfigSheet extends HookConsumerWidget {
 
             final initialValue = _formValuesFromConfig(formConfig);
             final isBuiltinEditing = isBuiltinAiConfig(formConfig);
+            final builtinSpec = _builtinSpecOf(formConfig);
 
             return SingleChildScrollView(
               child: Column(
@@ -266,12 +272,14 @@ class AIConfigSheet extends HookConsumerWidget {
                           final config = entry.value;
                           final isCurrent = currentConfig.id == config.id;
                           final isBuiltin = isBuiltinAiConfig(config);
-                          final isEditing = !isNewMode.value &&
+                          final isEditing =
+                              !isNewMode.value &&
                               (editingConfig.value?.id == config.id ||
                                   (editingConfig.value == null && isCurrent));
 
                           return _ConfigListItem(
                             config: config,
+                            builtinSpec: _builtinSpecOf(config),
                             isBuiltin: isBuiltin,
                             isCurrent: isCurrent,
                             isEditing: isEditing,
@@ -410,7 +418,8 @@ class AIConfigSheet extends HookConsumerWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            context.l10n.aiBuiltinConfigName,
+                            builtinSpec?.name ??
+                                context.l10n.aiBuiltinConfigName,
                             style: TextStyle(
                               fontSize: 14.sp,
                               fontWeight: FontWeight.w600,
@@ -439,17 +448,20 @@ class AIConfigSheet extends HookConsumerWidget {
                             hintText: context.l10n.aiApiKeyHint,
                             keyboardType: TextInputType.visiblePassword,
                           ),
-                          SizedBox(height: 8.h),
-                          Align(
-                            alignment: Alignment.centerLeft,
-                            child: TextButton.icon(
-                              onPressed: () => UrlHelper.openUrlInBrowser(
-                                url: 'https://shop.zmfaka.cn/shop/5W176EN1',
+                          if (builtinSpec?.purchaseUrl
+                              case final purchaseUrl?) ...[
+                            SizedBox(height: 8.h),
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: TextButton.icon(
+                                onPressed: () => UrlHelper.openUrlInBrowser(
+                                  url: purchaseUrl,
+                                ),
+                                icon: const Icon(Icons.shopping_cart_outlined),
+                                label: Text(context.l10n.aiBuyCardSecret),
                               ),
-                              icon: const Icon(Icons.shopping_cart_outlined),
-                              label: Text(context.l10n.aiBuyCardSecret),
                             ),
-                          ),
+                          ],
                         ],
                       ),
                     )
@@ -654,9 +666,9 @@ class AIConfigSheet extends HookConsumerWidget {
                                   );
                                   return;
                                 }
-                                final builtinConfig = formConfig.copyWith(
-                                  apiKey: apiKey,
-                                );
+                                final builtinConfig =
+                                    builtinSpec?.toConfig(apiKey: apiKey) ??
+                                    formConfig.copyWith(apiKey: apiKey);
                                 ToastMessage.show(
                                   context.l10n.aiBuiltinSwitching,
                                 );
@@ -772,6 +784,7 @@ class AIConfigSheet extends HookConsumerWidget {
 class _ConfigListItem extends ConsumerWidget {
   const _ConfigListItem({
     required this.config,
+    required this.builtinSpec,
     required this.isBuiltin,
     required this.isCurrent,
     required this.isEditing,
@@ -781,6 +794,7 @@ class _ConfigListItem extends ConsumerWidget {
   });
 
   final AiConfig config;
+  final BuiltinAiConfigSpec? builtinSpec;
   final bool isBuiltin;
   final bool isCurrent;
   final bool isEditing;
@@ -867,42 +881,35 @@ class _ConfigListItem extends ConsumerWidget {
                               scrollDirection: Axis.horizontal,
                               child: Row(
                                 children: [
-                                  SizedBox(width: 6.w),
-                                  Container(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: 6.w,
-                                      vertical: 2.h,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.redAccent,
-                                      borderRadius: BorderRadius.circular(4.r),
-                                    ),
-                                    child: Text(
-                                      'Codex',
-                                      style: TextStyle(
-                                        fontSize: 10.sp,
-                                        color: Colors.white,
+                                  for (
+                                    var index = 0;
+                                    index <
+                                        (builtinSpec?.badgeLabels.length ?? 0);
+                                    index++
+                                  ) ...[
+                                    SizedBox(width: 6.w),
+                                    Container(
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: 6.w,
+                                        vertical: 2.h,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: index == 0
+                                            ? Colors.redAccent
+                                            : Colors.blue,
+                                        borderRadius: BorderRadius.circular(
+                                          4.r,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        builtinSpec!.badgeLabels[index],
+                                        style: TextStyle(
+                                          fontSize: 10.sp,
+                                          color: Colors.white,
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                  SizedBox(width: 6.w),
-                                  Container(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: 6.w,
-                                      vertical: 2.h,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.blue,
-                                      borderRadius: BorderRadius.circular(4.r),
-                                    ),
-                                    child: Text(
-                                      'GPT5.4MAX',
-                                      style: TextStyle(
-                                        fontSize: 10.sp,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ),
+                                  ],
                                 ],
                               ),
                             ),
@@ -912,7 +919,13 @@ class _ConfigListItem extends ConsumerWidget {
                     SizedBox(height: 2.h),
                     Text(
                       isBuiltin
-                          ? 'GPT-MAX · ${config.apiKey.trim().isNotEmpty ? context.l10n.aiApiKeyConfigured : context.l10n.aiApiKeyNotConfigured}'
+                          ? [
+                              if ((builtinSpec?.statusLabel ?? '').isNotEmpty)
+                                builtinSpec!.statusLabel,
+                              config.apiKey.trim().isNotEmpty
+                                  ? context.l10n.aiApiKeyConfigured
+                                  : context.l10n.aiApiKeyNotConfigured,
+                            ].join(' · ')
                           : config.moduleName,
                       style: TextStyle(
                         fontSize: 11.sp,

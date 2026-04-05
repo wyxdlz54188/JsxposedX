@@ -47,7 +47,8 @@ class AiChatInput extends HookConsumerWidget {
     final hasContextDetails =
         chatState.hasUserMessages ||
         chatState.sessionContext.hasStructuredMemory;
-    final canRetryLastTurn = !hasContent && !hasAttachments && chatState.canRetryLastTurn;
+    final canRetryLastTurn =
+        !hasContent && !hasAttachments && chatState.canRetryLastTurn;
     final canRetryInitialization =
         !hasContent &&
         !hasAttachments &&
@@ -100,10 +101,10 @@ class AiChatInput extends HookConsumerWidget {
             text: textController.text.trim(),
             attachments: pendingAttachments.value,
           );
-          
+
           textController.clear();
           pendingAttachments.value = const [];
-          
+
           notifier.send(message); // Fire and forget
         } catch (error) {
           if (!context.mounted) {
@@ -144,10 +145,7 @@ class AiChatInput extends HookConsumerWidget {
               text: '',
               attachments: [picked],
             );
-            pendingAttachments.value = [
-              ...pendingAttachments.value,
-              picked,
-            ];
+            pendingAttachments.value = [...pendingAttachments.value, picked];
           } catch (error) {
             if (!context.mounted) {
               return;
@@ -165,10 +163,7 @@ class AiChatInput extends HookConsumerWidget {
               text: '',
               attachments: [picked],
             );
-            pendingAttachments.value = [
-              ...pendingAttachments.value,
-              picked,
-            ];
+            pendingAttachments.value = [...pendingAttachments.value, picked];
           } catch (error) {
             if (!context.mounted) {
               return;
@@ -189,7 +184,7 @@ class AiChatInput extends HookConsumerWidget {
             onOpenAnalysis: onOpenAnalysis,
           ),
         if (aiConfigAsync.value != null &&
-            isBuiltinAiConfig(aiConfigAsync.value!))
+            shouldUseBuiltinPadiOptions(aiConfigAsync.value!))
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 16.w),
             child: PadiChatOptionsBar(packageName: packageName),
@@ -229,16 +224,21 @@ class AiChatInput extends HookConsumerWidget {
                           spacing: 6.w,
                           runSpacing: 6.h,
                           children: [
-                            for (var index = 0; index < pendingAttachments.value.length; index++)
+                            for (
+                              var index = 0;
+                              index < pendingAttachments.value.length;
+                              index++
+                            )
                               _PendingAttachmentChip(
                                 file: pendingAttachments.value[index],
                                 onRemove: () {
                                   final updated = List<PickedFileData>.from(
                                     pendingAttachments.value,
                                   )..removeAt(index);
-                                  pendingAttachments.value = List<PickedFileData>.unmodifiable(
-                                    updated,
-                                  );
+                                  pendingAttachments.value =
+                                      List<PickedFileData>.unmodifiable(
+                                        updated,
+                                      );
                                 },
                               ),
                           ],
@@ -299,9 +299,10 @@ class AiChatInput extends HookConsumerWidget {
                                 : context.colorScheme.surface,
                             borderRadius: BorderRadius.circular(10.r),
                             border: Border.all(
-                              color: context.colorScheme.outlineVariant.withValues(
-                                alpha: context.isDark ? 0.55 : 0.8,
-                              ),
+                              color: context.colorScheme.outlineVariant
+                                  .withValues(
+                                    alpha: context.isDark ? 0.55 : 0.8,
+                                  ),
                             ),
                           ),
                           child: Icon(
@@ -391,11 +392,7 @@ class AiChatInput extends HookConsumerWidget {
   }
 }
 
-enum _AiInputMenuAction {
-  previewContext,
-  uploadImage,
-  uploadFile,
-}
+enum _AiInputMenuAction { previewContext, uploadImage, uploadFile }
 
 class _AiInputMenuItem extends StatelessWidget {
   const _AiInputMenuItem({
@@ -422,11 +419,7 @@ class _AiInputMenuItem extends StatelessWidget {
               color: context.colorScheme.primary.withValues(alpha: 0.10),
               borderRadius: BorderRadius.circular(9.r),
             ),
-            child: Icon(
-              icon,
-              size: 16.sp,
-              color: context.colorScheme.primary,
-            ),
+            child: Icon(icon, size: 16.sp, color: context.colorScheme.primary),
           ),
           SizedBox(width: 10.w),
           Expanded(
@@ -460,10 +453,7 @@ class _AiInputMenuItem extends StatelessWidget {
 }
 
 class _PendingAttachmentChip extends StatelessWidget {
-  const _PendingAttachmentChip({
-    required this.file,
-    required this.onRemove,
-  });
+  const _PendingAttachmentChip({required this.file, required this.onRemove});
 
   final PickedFileData file;
   final VoidCallback onRemove;
@@ -635,10 +625,7 @@ class _ContextSheet extends StatelessWidget {
 }
 
 class _ContextInfoCard extends StatelessWidget {
-  const _ContextInfoCard({
-    required this.title,
-    required this.rows,
-  });
+  const _ContextInfoCard({required this.title, required this.rows});
 
   final String title;
   final List<String> rows;
@@ -685,10 +672,7 @@ class _ContextInfoCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       item,
-                      style: TextStyle(
-                        fontSize: 13.sp,
-                        height: 1.45,
-                      ),
+                      style: TextStyle(fontSize: 13.sp, height: 1.45),
                     ),
                   ),
                 ],

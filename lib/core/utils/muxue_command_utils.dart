@@ -29,7 +29,7 @@ class MuxueCommand {
 class MuxueCommandType {
   const MuxueCommandType._();
 
-  static int get post => 0;
+  static int post = 0;
 
-  static int get app => 1;
+  static int app = 1;
 }

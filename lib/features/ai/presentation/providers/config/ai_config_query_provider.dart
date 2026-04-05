@@ -2,7 +2,8 @@ import 'package:JsxposedX/core/models/ai_config.dart';
 import 'package:JsxposedX/core/providers/pinia_provider.dart';
 import 'package:JsxposedX/features/ai/data/datasources/config/ai_config_action_datasource.dart';
 import 'package:JsxposedX/features/ai/data/datasources/config/ai_config_query_datasource.dart';
-import 'package:JsxposedX/features/ai/data/repositories/config/ai_config_query_repository_impl.dart' as impl;
+import 'package:JsxposedX/features/ai/data/repositories/config/ai_config_query_repository_impl.dart'
+    as impl;
 import 'package:JsxposedX/features/ai/domain/constants/builtin_ai_config.dart';
 import 'package:JsxposedX/features/ai/domain/repositories/config/ai_config_query_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -30,9 +31,9 @@ Future<List<AiConfig>> aiConfigList(Ref ref) async {
   final actionDataSource = AiConfigActionDatasource(storage: storage);
   final queryDataSource = AiConfigQueryDatasource(storage: storage);
   final dtos = await actionDataSource.getConfigList();
-  final builtinConfig = (await queryDataSource.getBuiltinConfig()).toEntity();
+  final builtinConfigs = await queryDataSource.getBuiltinConfigs();
   return [
-    builtinConfig,
+    ...builtinConfigs.map((dto) => dto.toEntity()),
     ...dtos.map((dto) => dto.toEntity()),
   ];
 }
@@ -49,14 +50,15 @@ class ActiveAiConfigMeta {
   final String displayLabel;
 }
 
-final activeAiConfigMetaProvider = Provider<AsyncValue<ActiveAiConfigMeta>>((ref) {
+final activeAiConfigMetaProvider = Provider<AsyncValue<ActiveAiConfigMeta>>((
+  ref,
+) {
   final configAsync = ref.watch(aiConfigProvider);
   return configAsync.whenData((config) {
-    final builtin = isBuiltinAiConfig(config);
     return ActiveAiConfigMeta(
       config: config,
-      isBuiltin: builtin,
-      displayLabel: builtin ? '内置接口' : config.name,
+      isBuiltin: isBuiltinAiConfig(config),
+      displayLabel: config.name,
     );
   });
 });
