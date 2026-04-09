@@ -144,7 +144,7 @@ final class OverlayWindowActionProvider
 }
 
 String _$overlayWindowActionHash() =>
-    r'1736d00e27055901b2a707c3d34c5fdc322a81b4';
+    r'67dc9f39cbcb8db7aa8af079350981fce2269717';
 
 abstract class _$OverlayWindowAction extends $Notifier<AsyncValue<void>> {
   AsyncValue<void> build();
