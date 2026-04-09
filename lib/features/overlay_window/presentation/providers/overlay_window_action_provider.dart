@@ -1,6 +1,9 @@
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:JsxposedX/features/overlay_window/data/datasources/overlay_window_action_datasource.dart';
+import 'package:JsxposedX/features/overlay_window/data/models/overlay_window_event_dto.dart';
+import 'package:JsxposedX/features/overlay_window/data/models/overlay_window_payload_dto.dart';
 import 'package:JsxposedX/features/overlay_window/data/repositories/overlay_window_action_repository_impl.dart';
 import 'package:JsxposedX/features/overlay_window/domain/models/overlay_host_layout.dart';
 import 'package:JsxposedX/features/overlay_window/domain/models/overlay_window_payload.dart';
@@ -34,9 +37,21 @@ OverlayWindowActionRepository overlayWindowActionRepository(Ref ref) {
 @Riverpod(keepAlive: true)
 class OverlayWindowAction extends _$OverlayWindowAction {
   Offset? _lastBubbleVisualOffset;
+  StreamSubscription<dynamic>? _overlaySubscription;
+  OverlayWindowPayload? _currentPayload;
 
   @override
-  AsyncValue<void> build() => const AsyncValue.data(null);
+  AsyncValue<void> build() {
+    _overlaySubscription ??= ref
+        .read(overlayWindowQueryRepositoryProvider)
+        .overlayEvents
+        .listen(_handleOverlayMessage);
+    ref.onDispose(() async {
+      await _overlaySubscription?.cancel();
+      _overlaySubscription = null;
+    });
+    return const AsyncValue.data(null);
+  }
 
   Future<OverlayWindowStatus> show(
     BuildContext context, {
@@ -95,12 +110,12 @@ class OverlayWindowAction extends _$OverlayWindowAction {
       _lastBubbleVisualOffset = OverlayWindowGeometry.visualOffsetFromHostPosition(
         bubbleLayout.position,
       );
-      await ref.read(overlayWindowActionRepositoryProvider).sharePayload(
-            _buildPayload(
-              sceneId: sceneId,
-              displayMode: OverlayWindowDisplayMode.bubble,
-            ),
-          );
+      final payload = _buildPayload(
+        sceneId: sceneId,
+        displayMode: OverlayWindowDisplayMode.bubble,
+      );
+      _currentPayload = payload;
+      await ref.read(overlayWindowActionRepositoryProvider).sharePayload(payload);
       return await _refreshStatus();
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
@@ -135,12 +150,12 @@ class OverlayWindowAction extends _$OverlayWindowAction {
               displayMode: OverlayWindowDisplayMode.panel,
             ),
           );
-      await ref.read(overlayWindowActionRepositoryProvider).sharePayload(
-            _buildPayload(
-              sceneId: scene.sceneId,
-              displayMode: OverlayWindowDisplayMode.panel,
-            ),
-          );
+      final payload = _buildPayload(
+        sceneId: scene.sceneId,
+        displayMode: OverlayWindowDisplayMode.panel,
+      );
+      _currentPayload = payload;
+      await ref.read(overlayWindowActionRepositoryProvider).sharePayload(payload);
       return await _refreshStatus();
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
@@ -187,12 +202,12 @@ class OverlayWindowAction extends _$OverlayWindowAction {
       _lastBubbleVisualOffset = OverlayWindowGeometry.visualOffsetFromHostPosition(
         bubbleLayout.position,
       );
-      await ref.read(overlayWindowActionRepositoryProvider).sharePayload(
-            _buildPayload(
-              sceneId: scene.sceneId,
-              displayMode: OverlayWindowDisplayMode.bubble,
-            ),
-          );
+      final payload = _buildPayload(
+        sceneId: scene.sceneId,
+        displayMode: OverlayWindowDisplayMode.bubble,
+      );
+      _currentPayload = payload;
+      await ref.read(overlayWindowActionRepositoryProvider).sharePayload(payload);
       return await _refreshStatus();
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
@@ -208,6 +223,7 @@ class OverlayWindowAction extends _$OverlayWindowAction {
     state = const AsyncValue.loading();
     try {
       await ref.read(overlayWindowActionRepositoryProvider).closeOverlay();
+      _currentPayload = null;
       return await _refreshStatus();
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
@@ -219,8 +235,40 @@ class OverlayWindowAction extends _$OverlayWindowAction {
     }
   }
 
+  Future<void> syncEnvironment() async {
+    final currentPayload = _currentPayload;
+    if (currentPayload == null) {
+      return;
+    }
+
+    final currentStatus = await _refreshStatus();
+    if (!currentStatus.isActive) {
+      return;
+    }
+
+    final syncedPayload = _buildPayload(
+      sceneId: currentPayload.sceneId,
+      displayMode: currentPayload.displayMode,
+    );
+    if (_hasSameEnvironment(currentPayload, syncedPayload)) {
+      return;
+    }
+
+    _currentPayload = syncedPayload;
+    await ref
+        .read(overlayWindowActionRepositoryProvider)
+        .sharePayload(syncedPayload);
+  }
+
   OverlaySceneDefinition? _readScene(int sceneId) {
     return ref.read(overlaySceneRegistryProvider)[sceneId];
+  }
+
+  void _handleOverlayMessage(dynamic rawMessage) {
+    if (OverlayWindowEventDto.maybeFromRaw(rawMessage) != null) {
+      return;
+    }
+    _currentPayload = OverlayWindowPayloadDto.fromRaw(rawMessage).toModel();
   }
 
   Future<OverlayWindowStatus> _refreshStatus() {
@@ -270,5 +318,15 @@ class OverlayWindowAction extends _$OverlayWindowAction {
       isDarkTheme: theme.brightness == Brightness.dark,
       primaryColorValue: theme.colorScheme.primary.value,
     );
+  }
+
+  bool _hasSameEnvironment(
+    OverlayWindowPayload previous,
+    OverlayWindowPayload next,
+  ) {
+    return previous.localeLanguageCode == next.localeLanguageCode &&
+        previous.localeCountryCode == next.localeCountryCode &&
+        previous.isDarkTheme == next.isDarkTheme &&
+        previous.primaryColorValue == next.primaryColorValue;
   }
 }

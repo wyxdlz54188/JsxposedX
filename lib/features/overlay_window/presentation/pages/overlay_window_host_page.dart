@@ -191,12 +191,20 @@ class _OverlayWindowHostPageState extends ConsumerState<OverlayWindowHostPage>
         return;
       }
 
+      final nextPayload = _payload.copyWith(
+        displayMode: OverlayWindowDisplayMode.panel,
+      );
       setState(() {
         _isTransitioningToPanel = false;
-        _payload = _payload.copyWith(
-          displayMode: OverlayWindowDisplayMode.panel,
-        );
+        _payload = nextPayload;
       });
+      Future<void>.microtask(() {
+        if (!mounted) {
+          return;
+        }
+        ref.read(overlayAppPayloadProvider.notifier).setPayload(nextPayload);
+      });
+      unawaited(_broadcastPayload(nextPayload));
       return;
     }
 
@@ -230,12 +238,20 @@ class _OverlayWindowHostPageState extends ConsumerState<OverlayWindowHostPage>
       return;
     }
 
+    final nextPayload = _payload.copyWith(
+      displayMode: OverlayWindowDisplayMode.bubble,
+    );
     setState(() {
       _bubbleVisualOffset = bubbleVisualOffset;
-      _payload = _payload.copyWith(
-        displayMode: OverlayWindowDisplayMode.bubble,
-      );
+      _payload = nextPayload;
     });
+    Future<void>.microtask(() {
+      if (!mounted) {
+        return;
+      }
+      ref.read(overlayAppPayloadProvider.notifier).setPayload(nextPayload);
+    });
+    unawaited(_broadcastPayload(nextPayload));
   }
 
   Widget _buildPanelWindow(BuildContext context) {
@@ -367,6 +383,12 @@ class _OverlayWindowHostPageState extends ConsumerState<OverlayWindowHostPage>
     );
     await FlutterOverlayWindow.moveOverlay(
       OverlayPosition(hostPosition.dx, hostPosition.dy),
+    );
+  }
+
+  Future<void> _broadcastPayload(OverlayWindowPayload payload) {
+    return FlutterOverlayWindow.shareData(
+      OverlayWindowPayloadDto.fromModel(payload).toRaw(),
     );
   }
 
