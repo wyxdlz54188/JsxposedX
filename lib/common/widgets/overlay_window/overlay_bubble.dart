@@ -24,25 +24,26 @@ class OverlayBubble extends StatelessWidget {
           boxShadow: <BoxShadow>[
             BoxShadow(
               color: const Color(0xFF70D7F9).withValues(
-                alpha: context.isDark ? 0.34 : 0.30,
+                alpha: context.isDark ? 0.28 : 0.24,
               ),
-              blurRadius: 15,
-              spreadRadius: 2,
+              blurRadius: 10,
+              spreadRadius: 1,
             ),
             BoxShadow(
               color: const Color(0xFFAD98FF).withValues(
-                alpha: context.isDark ? 0.32 : 0.30,
+                alpha: context.isDark ? 0.24 : 0.22,
               ),
-              blurRadius: 20,
-              offset: const Offset(5, 5),
+              blurRadius: 12,
+              offset: const Offset(3, 3),
             ),
             BoxShadow(
               color: Colors.black.withValues(
-                alpha: context.isDark ? 0.14 : 0.08,
+                alpha: context.isDark ? 0.12 : 0.06,
               ),
-              blurRadius: 10,
-              offset: const Offset(0, 3),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
             ),
+
           ],
         ),
         child: SizedBox(
