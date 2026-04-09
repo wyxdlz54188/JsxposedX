@@ -29,6 +29,7 @@ class _OverlayWindowRendererState extends State<OverlayWindowRenderer>
   );
   OverlayViewportMetrics? _viewportMetrics;
   Offset? _bubbleVisualOffset;
+  bool _isTransitioningToPanel = false;
 
   @override
   void initState() {
@@ -47,14 +48,22 @@ class _OverlayWindowRendererState extends State<OverlayWindowRenderer>
 
   @override
   void didChangeMetrics() {
-    unawaited(_refreshViewportMetrics(syncBubblePosition: _payload.isBubble));
+    unawaited(
+      _refreshViewportMetrics(
+        syncBubblePosition: _payload.isBubble && !_isTransitioningToPanel,
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Material(
       color: Colors.transparent,
-      child: _payload.isPanel ? _buildPanelWindow(context) : _buildBubble(),
+      child: _isTransitioningToPanel
+          ? const SizedBox.expand()
+          : _payload.isPanel
+          ? _buildPanelWindow(context)
+          : _buildBubble(),
     );
   }
 
@@ -74,13 +83,13 @@ class _OverlayWindowRendererState extends State<OverlayWindowRenderer>
       _payload = nextPayload;
     });
 
-    if (nextPayload.isBubble) {
+    if (nextPayload.isBubble && !_isTransitioningToPanel) {
       unawaited(_syncBubbleVisualOffsetFromHost());
     }
   }
 
   void _handleOverlayEvent(OverlayWindowEvent event) {
-    if (!mounted || !_payload.isBubble) {
+    if (!mounted || !_payload.isBubble || _isTransitioningToPanel) {
       return;
     }
 
@@ -121,6 +130,14 @@ class _OverlayWindowRendererState extends State<OverlayWindowRenderer>
     }
 
     if (displayMode == OverlayWindowDisplayMode.panel) {
+      setState(() {
+        _isTransitioningToPanel = true;
+      });
+      await WidgetsBinding.instance.endOfFrame;
+      if (!mounted) {
+        return;
+      }
+
       final updated = await FlutterOverlayWindow.updateOverlayLayout(
         width: WindowSize.matchParent,
         height: WindowSize.fullCover,
@@ -129,9 +146,15 @@ class _OverlayWindowRendererState extends State<OverlayWindowRenderer>
         flag: OverlayFlag.defaultFlag,
       );
       if (!mounted || updated != true) {
+        if (mounted) {
+          setState(() {
+            _isTransitioningToPanel = false;
+          });
+        }
         return;
       }
       setState(() {
+        _isTransitioningToPanel = false;
         _payload = _payload.copyWith(
           displayMode: OverlayWindowDisplayMode.panel,
         );
@@ -216,7 +239,7 @@ class _OverlayWindowRendererState extends State<OverlayWindowRenderer>
 
     setState(() {
       _viewportMetrics = viewport;
-      if (_bubbleVisualOffset != null) {
+      if (_bubbleVisualOffset != null && !_isTransitioningToPanel) {
         final bubbleSize = _bubbleSizeForScene(_payload.scene);
         _bubbleVisualOffset = OverlayWindowGeometry.clampBubbleVisualOffset(
           _bubbleVisualOffset!,
@@ -226,7 +249,7 @@ class _OverlayWindowRendererState extends State<OverlayWindowRenderer>
       }
     });
 
-    if (syncBubblePosition && _payload.isBubble) {
+    if (syncBubblePosition && _payload.isBubble && !_isTransitioningToPanel) {
       await _syncBubbleVisualOffsetFromHost();
     }
     return viewport;
