@@ -55,7 +55,7 @@ final class RepositoryQueryRepositoryProvider
 }
 
 String _$repositoryQueryRepositoryHash() =>
-    r'a2b0b7ba29e9acec482795adbe5e22aab2661250';
+    r'808e24d929c7402fe77b5d176846afce832fb088';
 
 @ProviderFor(getScriptDetail)
 const getScriptDetailProvider = GetScriptDetailFamily._();

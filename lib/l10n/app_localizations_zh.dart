@@ -1644,4 +1644,43 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get aiMethodCopyFull => '复制完整类名.方法名';
+
+  @override
+  String get overlayMemoryToolTitle => 'Memory Tool';
+
+  @override
+  String get overlayFloatingToolWindow => '悬浮工具窗口';
+
+  @override
+  String get overlayWindowNotificationContent => '悬浮窗运行中';
+
+  @override
+  String get overlayWindowFallbackTitle => 'Overlay Window';
+
+  @override
+  String get overlayWindowUnknownSceneTitle => '悬浮场景不可用';
+
+  @override
+  String get overlayWindowUnknownSceneDescription => '当前收到的悬浮场景未注册，已阻止继续渲染。';
+
+  @override
+  String get overlayQuickWorkspace => '快速工作区';
+
+  @override
+  String get overlayQuickWorkspaceDescription => '点击悬浮气泡可以展开面板，使用右上角按钮可最小化或关闭。';
+
+  @override
+  String get overlayBubbleFeatureTitle => '悬浮气泡';
+
+  @override
+  String get overlayBubbleFeatureDescription => '单击即可展开面板。';
+
+  @override
+  String get overlayPanelFeatureTitle => '稳定面板';
+
+  @override
+  String get overlayPanelFeatureDescription => '使用普通 Material 渲染，降低显示伪影风险。';
+
+  @override
+  String get overlayConnected => '悬浮窗已连接';
 }

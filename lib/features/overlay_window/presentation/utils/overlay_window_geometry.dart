@@ -1,5 +1,6 @@
-import 'package:flutter/widgets.dart';
-import 'package:flutter_overlay_window/flutter_overlay_window.dart';
+import 'dart:ui';
+
+import 'package:JsxposedX/features/overlay_window/domain/models/overlay_viewport_metrics_model.dart';
 
 class OverlayWindowGeometry {
   const OverlayWindowGeometry._();
@@ -11,22 +12,22 @@ class OverlayWindowGeometry {
     return bubbleSize + (bubbleHostPadding * 2);
   }
 
-  static OverlayPosition hostPositionFromVisualOffset(Offset visualOffset) {
-    return OverlayPosition(
+  static Offset hostPositionFromVisualOffset(Offset visualOffset) {
+    return Offset(
       visualOffset.dx - bubbleHostPadding,
       visualOffset.dy - bubbleHostPadding,
     );
   }
 
-  static Offset visualOffsetFromHostPosition(OverlayPosition hostPosition) {
+  static Offset visualOffsetFromHostPosition(Offset hostPosition) {
     return Offset(
-      hostPosition.x + bubbleHostPadding,
-      hostPosition.y + bubbleHostPadding,
+      hostPosition.dx + bubbleHostPadding,
+      hostPosition.dy + bubbleHostPadding,
     );
   }
 
   static Offset defaultBubbleVisualOffset({
-    required OverlayViewportMetrics viewport,
+    required OverlayViewportMetricsModel viewport,
     required double bubbleSize,
   }) {
     final bounds = bubbleBounds(viewport: viewport, bubbleSize: bubbleSize);
@@ -36,7 +37,7 @@ class OverlayWindowGeometry {
 
   static Offset clampBubbleVisualOffset(
     Offset offset, {
-    required OverlayViewportMetrics viewport,
+    required OverlayViewportMetricsModel viewport,
     required double bubbleSize,
   }) {
     final bounds = bubbleBounds(viewport: viewport, bubbleSize: bubbleSize);
@@ -48,7 +49,7 @@ class OverlayWindowGeometry {
 
   static Offset snapBubbleVisualOffset(
     Offset offset, {
-    required OverlayViewportMetrics viewport,
+    required OverlayViewportMetricsModel viewport,
     required double bubbleSize,
   }) {
     final bounds = bubbleBounds(viewport: viewport, bubbleSize: bubbleSize);
@@ -63,7 +64,7 @@ class OverlayWindowGeometry {
   }
 
   static OverlayBubbleBounds bubbleBounds({
-    required OverlayViewportMetrics viewport,
+    required OverlayViewportMetricsModel viewport,
     required double bubbleSize,
   }) {
     final safePadding = viewport.safePadding;

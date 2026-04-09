@@ -1666,4 +1666,46 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aiMethodCopyFull => 'Copy Full Path';
+
+  @override
+  String get overlayMemoryToolTitle => 'Memory Tool';
+
+  @override
+  String get overlayFloatingToolWindow => 'Floating tool window';
+
+  @override
+  String get overlayWindowNotificationContent => 'Overlay is running';
+
+  @override
+  String get overlayWindowFallbackTitle => 'Overlay Window';
+
+  @override
+  String get overlayWindowUnknownSceneTitle => 'Overlay scene unavailable';
+
+  @override
+  String get overlayWindowUnknownSceneDescription =>
+      'The requested overlay scene is not registered, so rendering was stopped.';
+
+  @override
+  String get overlayQuickWorkspace => 'Quick Workspace';
+
+  @override
+  String get overlayQuickWorkspaceDescription =>
+      'Tap the floating bubble to open this panel. Use the top-right buttons to minimize or close it.';
+
+  @override
+  String get overlayBubbleFeatureTitle => 'Floating Bubble';
+
+  @override
+  String get overlayBubbleFeatureDescription => 'Single tap opens the panel.';
+
+  @override
+  String get overlayPanelFeatureTitle => 'Stable Panel';
+
+  @override
+  String get overlayPanelFeatureDescription =>
+      'Uses plain Material rendering to reduce visual artifacts.';
+
+  @override
+  String get overlayConnected => 'Overlay connected';
 }

@@ -1,8 +1,8 @@
 import 'dart:math' as math;
 
-import 'package:JsxposedX/common/widgets/overlay_window/overlay_window_controller.dart';
-import 'package:JsxposedX/common/widgets/overlay_window/overlay_window_scope.dart';
+import 'package:JsxposedX/core/extensions/context_extensions.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class OverlayWindow extends StatelessWidget {
   const OverlayWindow({
@@ -32,25 +32,11 @@ class OverlayWindow extends StatelessWidget {
   final double maxWidth;
   final double? maxHeight;
 
-  static Future<OverlayWindowStatus> show(
-    BuildContext context, {
-    required int scene,
-    OverlayWindowPresentation presentation = const OverlayWindowPresentation(),
-  }) {
-    return OverlayWindowScope.of(
-      context,
-    ).show(context, scene: scene, presentation: presentation);
-  }
-
-  static Future<OverlayWindowStatus> dismiss(BuildContext context) {
-    return OverlayWindowScope.of(context).hide();
-  }
-
   @override
   Widget build(BuildContext context) {
     final resolvedHeader = header ?? _buildHeader(context);
     final hasHeader = resolvedHeader != null;
-    final colorScheme = Theme.of(context).colorScheme;
+    final colorScheme = context.colorScheme;
     final backdropTapHandler = onBackdropTap ?? onMinimize ?? onClose;
 
     return Material(
@@ -81,7 +67,7 @@ class OverlayWindow extends StatelessWidget {
                       child: DecoratedBox(
                         decoration: BoxDecoration(
                           color: colorScheme.surface.withValues(alpha: 0.97),
-                          borderRadius: BorderRadius.circular(24),
+                          borderRadius: BorderRadius.circular(24.r),
                           border: Border.all(
                             color: colorScheme.outlineVariant.withValues(
                               alpha: 0.42,
@@ -90,33 +76,33 @@ class OverlayWindow extends StatelessWidget {
                           boxShadow: <BoxShadow>[
                             BoxShadow(
                               color: Colors.black.withValues(alpha: 0.24),
-                              blurRadius: 20,
-                              offset: const Offset(0, 12),
+                              blurRadius: 20.r,
+                              offset: Offset(0, 12.h),
                             ),
                           ],
                         ),
                         child: Padding(
-                          padding: const EdgeInsets.all(20),
+                          padding: EdgeInsets.all(20.r),
                           child: SingleChildScrollView(
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: <Widget>[
                                 if (hasHeader) resolvedHeader,
-                                if (hasHeader) const SizedBox(height: 16),
+                                if (hasHeader) SizedBox(height: 16.h),
                                 DecoratedBox(
                                   decoration: BoxDecoration(
                                     color: colorScheme.surfaceContainerHighest
                                         .withValues(alpha: 0.58),
-                                    borderRadius: BorderRadius.circular(18),
+                                    borderRadius: BorderRadius.circular(18.r),
                                   ),
                                   child: Padding(
-                                    padding: const EdgeInsets.all(16),
+                                    padding: EdgeInsets.all(16.r),
                                     child: child,
                                   ),
                                 ),
                                 if (footer != null) ...<Widget>[
-                                  const SizedBox(height: 12),
+                                  SizedBox(height: 12.h),
                                   footer!,
                                 ],
                               ],
@@ -143,24 +129,24 @@ class OverlayWindow extends StatelessWidget {
       return null;
     }
 
-    final colorScheme = Theme.of(context).colorScheme;
+    final colorScheme = context.colorScheme;
 
     return DecoratedBox(
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerHigh.withValues(alpha: 0.92),
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(18.r),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Container(
-              width: 42,
-              height: 42,
+              width: 42.w,
+              height: 42.w,
               decoration: BoxDecoration(
                 color: colorScheme.primary,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(14.r),
               ),
               child: const Icon(
                 Icons.memory_rounded,
@@ -168,7 +154,7 @@ class OverlayWindow extends StatelessWidget {
                 size: 20,
               ),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: 12.w),
             Expanded(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -181,19 +167,19 @@ class OverlayWindow extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: colorScheme.onSurface,
-                        fontSize: 17,
+                        fontSize: 17.sp,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
                   if (subtitle != null) ...<Widget>[
-                    if (title != null) const SizedBox(height: 4),
+                    if (title != null) SizedBox(height: 4.h),
                     Text(
                       subtitle!,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: colorScheme.onSurfaceVariant,
-                        fontSize: 12,
+                        fontSize: 12.sp,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -206,7 +192,7 @@ class OverlayWindow extends StatelessWidget {
                 icon: Icons.remove_rounded,
                 onPressed: onMinimize!,
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: 8.w),
             ],
             if (onClose != null)
               _OverlayHeaderButton(
@@ -240,18 +226,18 @@ class _OverlayHeaderButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final colorScheme = context.colorScheme;
 
     return Material(
       color: colorScheme.surfaceContainerHighest,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(12.r),
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(12.r),
         onTap: onPressed,
         child: SizedBox(
-          width: 40,
-          height: 40,
-          child: Icon(icon, size: 20, color: colorScheme.onSurface),
+          width: 40.w,
+          height: 40.w,
+          child: Icon(icon, size: 20.sp, color: colorScheme.onSurface),
         ),
       ),
     );

@@ -836,5 +836,18 @@
   "aiMethodParams": "Parameters",
   "aiMethodClass": "Class",
   "aiMethodHookHint": "Hook Hint",
-  "aiMethodCopyFull": "Copy Full Path"
+  "aiMethodCopyFull": "Copy Full Path",
+  "overlayMemoryToolTitle": "Memory Tool",
+  "overlayFloatingToolWindow": "Floating tool window",
+  "overlayWindowNotificationContent": "Overlay is running",
+  "overlayWindowFallbackTitle": "Overlay Window",
+  "overlayWindowUnknownSceneTitle": "Overlay scene unavailable",
+  "overlayWindowUnknownSceneDescription": "The requested overlay scene is not registered, so rendering was stopped.",
+  "overlayQuickWorkspace": "Quick Workspace",
+  "overlayQuickWorkspaceDescription": "Tap the floating bubble to open this panel. Use the top-right buttons to minimize or close it.",
+  "overlayBubbleFeatureTitle": "Floating Bubble",
+  "overlayBubbleFeatureDescription": "Single tap opens the panel.",
+  "overlayPanelFeatureTitle": "Stable Panel",
+  "overlayPanelFeatureDescription": "Uses plain Material rendering to reduce visual artifacts.",
+  "overlayConnected": "Overlay connected"
 }

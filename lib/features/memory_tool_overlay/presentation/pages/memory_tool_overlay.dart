@@ -1,5 +1,7 @@
 import 'package:JsxposedX/common/pages/toast.dart';
+import 'package:JsxposedX/core/extensions/context_extensions.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 class MemoryToolOverlay extends HookConsumerWidget {
@@ -7,52 +9,47 @@ class MemoryToolOverlay extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Text(
-          'Quick Workspace',
-          style: TextStyle(
-            color: colorScheme.onSurface,
-            fontSize: 20,
+          context.l10n.overlayQuickWorkspace,
+          style: context.textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.w700,
           ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: 8.h),
         Text(
-          'Tap the floating bubble to open this panel. Use the top-right buttons to minimize or close it.',
-          style: TextStyle(
-            color: colorScheme.onSurfaceVariant,
-            fontSize: 13,
+          context.l10n.overlayQuickWorkspaceDescription,
+          style: context.textTheme.bodyMedium?.copyWith(
+            color: context.colorScheme.onSurfaceVariant,
             height: 1.45,
           ),
         ),
-        const SizedBox(height: 18),
+        SizedBox(height: 18.h),
         Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: const <Widget>[
+          spacing: 12.w,
+          runSpacing: 12.h,
+          children: <Widget>[
             _OverlayInfoCard(
               icon: Icons.circle_rounded,
-              title: 'Floating Bubble',
-              description: 'Single tap opens the panel.',
+              title: context.l10n.overlayBubbleFeatureTitle,
+              description: context.l10n.overlayBubbleFeatureDescription,
             ),
             _OverlayInfoCard(
               icon: Icons.crop_square_rounded,
-              title: 'Stable Panel',
-              description: 'Uses plain Material rendering to avoid artifacts.',
+              title: context.l10n.overlayPanelFeatureTitle,
+              description: context.l10n.overlayPanelFeatureDescription,
             ),
           ],
         ),
-        const SizedBox(height: 20),
+        SizedBox(height: 20.h),
         FilledButton.icon(
           onPressed: () {
-            ToastMessage.show('Overlay connected');
+            ToastMessage.show(context.l10n.overlayConnected);
           },
           icon: const Icon(Icons.play_arrow_rounded),
-          label: const Text('Test Toast'),
+          label: Text(context.l10n.test),
         ),
       ],
     );
@@ -72,36 +69,33 @@ class _OverlayInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return SizedBox(
-      width: 220,
+      width: 220.w,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.58),
-          borderRadius: BorderRadius.circular(16),
+          color: context.colorScheme.surfaceContainerHighest.withValues(
+            alpha: 0.58,
+          ),
+          borderRadius: BorderRadius.circular(16.r),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(16.r),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Icon(icon, color: colorScheme.primary, size: 22),
-              const SizedBox(height: 12),
+              Icon(icon, color: context.colorScheme.primary, size: 22.sp),
+              SizedBox(height: 12.h),
               Text(
                 title,
-                style: TextStyle(
-                  color: colorScheme.onSurface,
-                  fontSize: 15,
+                style: context.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              const SizedBox(height: 6),
+              SizedBox(height: 6.h),
               Text(
                 description,
-                style: TextStyle(
-                  color: colorScheme.onSurfaceVariant,
-                  fontSize: 12,
+                style: context.textTheme.bodySmall?.copyWith(
+                  color: context.colorScheme.onSurfaceVariant,
                   height: 1.45,
                 ),
               ),

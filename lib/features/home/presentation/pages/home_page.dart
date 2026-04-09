@@ -1,8 +1,6 @@
 import 'package:JsxposedX/common/pages/toast.dart';
 import 'package:JsxposedX/common/widgets/app_bottom_sheet.dart';
 import 'package:JsxposedX/common/widgets/loading.dart';
-import 'package:JsxposedX/common/widgets/overlay_window/overlay_scene.dart';
-import 'package:JsxposedX/common/widgets/overlay_window/overlay_window.dart';
 import 'package:JsxposedX/core/extensions/context_extensions.dart';
 import 'package:JsxposedX/core/providers/theme_provider.dart';
 import 'package:JsxposedX/core/utils/procedure_utils.dart';
@@ -17,6 +15,8 @@ import 'package:JsxposedX/features/home/presentation/widgets/home_center_dock_bu
 import 'package:JsxposedX/features/home/presentation/widgets/notice_bottom_sheet.dart';
 import 'package:JsxposedX/features/home/presentation/widgets/select_app_sheet.dart';
 import 'package:JsxposedX/features/home/presentation/widgets/update_check_dialog.dart';
+import 'package:JsxposedX/features/memory_tool_overlay/presentation/overlay/memory_tool_overlay_scene.dart';
+import 'package:JsxposedX/features/overlay_window/presentation/providers/overlay_window_action_provider.dart';
 import 'package:JsxposedX/features/project/presentation/providers/project_action_provider.dart';
 import 'package:JsxposedX/features/project/presentation/providers/project_query_provider.dart';
 import 'package:flutter/material.dart';
@@ -129,8 +129,11 @@ class HomePage extends HookConsumerWidget {
       floatingActionButton: HomeCenterDockButton(
         colorScheme: colorScheme,
         size: fabSize,
-        onPressed: () {
-          OverlayWindow.show(context, scene: OverlaySceneEnum.memoryTool);
+        onPressed: () async {
+          await ref.read(overlayWindowActionProvider.notifier).show(
+                context,
+                sceneId: MemoryToolOverlayScene.sceneId,
+              );
         },
       ),
       appBar: AppBar(

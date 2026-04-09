@@ -841,5 +841,18 @@
   "aiMethodParams": "参数列表",
   "aiMethodClass": "所属类",
   "aiMethodHookHint": "Hook 指引",
-  "aiMethodCopyFull": "复制完整类名.方法名"
+  "aiMethodCopyFull": "复制完整类名.方法名",
+  "overlayMemoryToolTitle": "Memory Tool",
+  "overlayFloatingToolWindow": "悬浮工具窗口",
+  "overlayWindowNotificationContent": "悬浮窗运行中",
+  "overlayWindowFallbackTitle": "Overlay Window",
+  "overlayWindowUnknownSceneTitle": "悬浮场景不可用",
+  "overlayWindowUnknownSceneDescription": "当前收到的悬浮场景未注册，已阻止继续渲染。",
+  "overlayQuickWorkspace": "快速工作区",
+  "overlayQuickWorkspaceDescription": "点击悬浮气泡可以展开面板，使用右上角按钮可最小化或关闭。",
+  "overlayBubbleFeatureTitle": "悬浮气泡",
+  "overlayBubbleFeatureDescription": "单击即可展开面板。",
+  "overlayPanelFeatureTitle": "稳定面板",
+  "overlayPanelFeatureDescription": "使用普通 Material 渲染，降低显示伪影风险。",
+  "overlayConnected": "悬浮窗已连接"
 }

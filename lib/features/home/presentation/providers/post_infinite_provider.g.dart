@@ -68,8 +68,7 @@ abstract class _$NewPostsInfinite extends $Notifier<PostState> {
 }
 
 /// 收藏帖子无限滚动
-///
-/// Copied from [FavoritePostsInfinite].
+
 @ProviderFor(FavoritePostsInfinite)
 const favoritePostsInfiniteProvider = FavoritePostsInfiniteProvider._();
 
@@ -105,11 +104,10 @@ final class FavoritePostsInfiniteProvider
 }
 
 String _$favoritePostsInfiniteHash() =>
-    r'0f3d96b1d1bfeb92ba33bc5a4f6be546e1d39741';
+    r'd499b0193720311b742a4d3e11a53218f9910604';
 
 /// 收藏帖子无限滚动
-///
-/// Copied from [FavoritePostsInfinite].
+
 abstract class _$FavoritePostsInfinite extends $Notifier<PostState> {
   PostState build();
   @$mustCallSuper

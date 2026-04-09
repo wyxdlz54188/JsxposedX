@@ -3247,6 +3247,84 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'复制完整类名.方法名'**
   String get aiMethodCopyFull;
+
+  /// No description provided for @overlayMemoryToolTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'Memory Tool'**
+  String get overlayMemoryToolTitle;
+
+  /// No description provided for @overlayFloatingToolWindow.
+  ///
+  /// In zh, this message translates to:
+  /// **'悬浮工具窗口'**
+  String get overlayFloatingToolWindow;
+
+  /// No description provided for @overlayWindowNotificationContent.
+  ///
+  /// In zh, this message translates to:
+  /// **'悬浮窗运行中'**
+  String get overlayWindowNotificationContent;
+
+  /// No description provided for @overlayWindowFallbackTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'Overlay Window'**
+  String get overlayWindowFallbackTitle;
+
+  /// No description provided for @overlayWindowUnknownSceneTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'悬浮场景不可用'**
+  String get overlayWindowUnknownSceneTitle;
+
+  /// No description provided for @overlayWindowUnknownSceneDescription.
+  ///
+  /// In zh, this message translates to:
+  /// **'当前收到的悬浮场景未注册，已阻止继续渲染。'**
+  String get overlayWindowUnknownSceneDescription;
+
+  /// No description provided for @overlayQuickWorkspace.
+  ///
+  /// In zh, this message translates to:
+  /// **'快速工作区'**
+  String get overlayQuickWorkspace;
+
+  /// No description provided for @overlayQuickWorkspaceDescription.
+  ///
+  /// In zh, this message translates to:
+  /// **'点击悬浮气泡可以展开面板，使用右上角按钮可最小化或关闭。'**
+  String get overlayQuickWorkspaceDescription;
+
+  /// No description provided for @overlayBubbleFeatureTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'悬浮气泡'**
+  String get overlayBubbleFeatureTitle;
+
+  /// No description provided for @overlayBubbleFeatureDescription.
+  ///
+  /// In zh, this message translates to:
+  /// **'单击即可展开面板。'**
+  String get overlayBubbleFeatureDescription;
+
+  /// No description provided for @overlayPanelFeatureTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'稳定面板'**
+  String get overlayPanelFeatureTitle;
+
+  /// No description provided for @overlayPanelFeatureDescription.
+  ///
+  /// In zh, this message translates to:
+  /// **'使用普通 Material 渲染，降低显示伪影风险。'**
+  String get overlayPanelFeatureDescription;
+
+  /// No description provided for @overlayConnected.
+  ///
+  /// In zh, this message translates to:
+  /// **'悬浮窗已连接'**
+  String get overlayConnected;
 }
 
 class _AppLocalizationsDelegate
