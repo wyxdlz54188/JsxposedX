@@ -1,8 +1,9 @@
-import 'package:JsxposedX/core/networks/http_service.dart';
+import 'package:JsxposedX/generated/memory_tool.g.dart';
 
 class MemoryQueryDatasource {
-  final HttpService _httpService;
+  final _native = MemoryToolNative();
 
-  MemoryQueryDatasource({required HttpService httpService})
-      : _httpService = httpService;
+  Future<int> getPid({required String packageName}) async {
+    return await _native.getPid(packageName: packageName);
+  }
 }

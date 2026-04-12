@@ -5,4 +5,9 @@ class MemoryQueryRepositoryImpl implements MemoryQueryRepository {
   final MemoryQueryDatasource dataSource;
 
   MemoryQueryRepositoryImpl({required this.dataSource});
+
+  @override
+  Future<int> getPid({required String packageName}) async {
+    return await dataSource.getPid(packageName: packageName);
+  }
 }

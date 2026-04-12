@@ -362,9 +362,12 @@ public class OverlayService extends Service implements View.OnTouchListener {
             );  // "overlayMain" is custom entry point
 
             flutterEngine = engineGroup.createAndRunEngine(this, entryPoint);
+            HostNativeRegistrant.registerAll(this, flutterEngine.getDartExecutor().getBinaryMessenger());
 
             // Cache the created FlutterEngine for future use
             FlutterEngineCache.getInstance().put(OverlayConstants.CACHED_TAG, flutterEngine);
+        } else {
+            HostNativeRegistrant.registerAll(this, flutterEngine.getDartExecutor().getBinaryMessenger());
         }
 
         // Create the MethodChannel with the properly initialized FlutterEngine

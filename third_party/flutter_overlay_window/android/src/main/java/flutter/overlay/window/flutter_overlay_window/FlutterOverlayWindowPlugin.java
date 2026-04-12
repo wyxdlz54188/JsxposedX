@@ -170,7 +170,13 @@ public class FlutterOverlayWindowPlugin implements
                     FlutterInjector.instance().flutterLoader().findAppBundlePath(),
                     "overlayMain");
             FlutterEngine engine = enn.createAndRunEngine(context, dEntry);
+            HostNativeRegistrant.registerAll(context, engine.getDartExecutor().getBinaryMessenger());
             FlutterEngineCache.getInstance().put(OverlayConstants.CACHED_TAG, engine);
+        } else {
+            FlutterEngine engine = FlutterEngineCache.getInstance().get(OverlayConstants.CACHED_TAG);
+            if (engine != null) {
+                HostNativeRegistrant.registerAll(context, engine.getDartExecutor().getBinaryMessenger());
+            }
         }
     }
 

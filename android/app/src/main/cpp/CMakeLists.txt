@@ -45,6 +45,7 @@ if(EXISTS ${LIEF_LIB})
 
     add_library(memory_tool SHARED
         memory_tool_jni.cpp
+        memory_tool_utils.cpp
     )
 
     target_include_directories(so_analysis PRIVATE
