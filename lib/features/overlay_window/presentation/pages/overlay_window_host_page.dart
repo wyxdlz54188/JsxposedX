@@ -35,18 +35,35 @@ class OverlayWindowHostPage extends HookConsumerWidget {
 
     final runtimeState = ref.watch(overlayWindowHostRuntimeProvider);
     final payload = runtimeState.payload;
-    final content = runtimeState.isTransitioningToPanel
-        ? const SizedBox.expand()
-        : payload.isPanel
-        ? _buildPanelWindow(context, ref, payload.sceneId)
-        : _buildBubble(ref, payload.sceneId);
+    final panelWindow = _buildPanelWindow(context, ref, payload.sceneId);
+    final bubbleWindow = _buildBubble(ref, payload.sceneId);
 
     return Material(
       color: Colors.transparent,
       child: Stack(
         fit: StackFit.expand,
         children: <Widget>[
-          content,
+          Offstage(
+            offstage: !payload.isPanel || runtimeState.isTransitioningToPanel,
+            child: TickerMode(
+              enabled: payload.isPanel && !runtimeState.isTransitioningToPanel,
+              child: KeyedSubtree(
+                key: ValueKey('overlay-panel-${payload.sceneId}'),
+                child: panelWindow,
+              ),
+            ),
+          ),
+          Offstage(
+            offstage: payload.isPanel || runtimeState.isTransitioningToPanel,
+            child: TickerMode(
+              enabled: payload.isBubble && !runtimeState.isTransitioningToPanel,
+              child: KeyedSubtree(
+                key: ValueKey('overlay-bubble-${payload.sceneId}'),
+                child: bubbleWindow,
+              ),
+            ),
+          ),
+          if (runtimeState.isTransitioningToPanel) const SizedBox.expand(),
           if (runtimeState.activeToast != null)
             _OverlayToastView(toast: runtimeState.activeToast!),
         ],
