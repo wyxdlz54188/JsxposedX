@@ -16,12 +16,13 @@ bool BuildSearchPattern(const SearchValue& value,
                         std::vector<uint8_t>* bytes,
                         std::string* error);
 
-bool ShouldDisplayBytesAsText(const SearchValue& value);
+BytesDisplayEncoding ResolveBytesDisplayEncoding(const SearchValue& value);
 
 std::string FormatDisplayValue(SearchValueType type,
                                const std::vector<uint8_t>& raw_bytes,
                                bool little_endian,
-                               bool bytes_as_text = false);
+                               BytesDisplayEncoding bytes_display_encoding =
+                                   BytesDisplayEncoding::kHex);
 
 }  // namespace memory_tool
 

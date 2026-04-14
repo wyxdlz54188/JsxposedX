@@ -30,6 +30,12 @@ enum class SearchTaskStatus : int {
     kFailed = 4,
 };
 
+enum class BytesDisplayEncoding : int {
+    kHex = 0,
+    kUtf8 = 1,
+    kUtf16Le = 2,
+};
+
 struct SearchValue {
     SearchValueType type = SearchValueType::kI32;
     std::string text_value;
@@ -104,7 +110,7 @@ struct SearchSession {
     SearchValueType type = SearchValueType::kI32;
     bool exact_mode = true;
     bool little_endian = true;
-    bool bytes_display_as_text = false;
+    BytesDisplayEncoding bytes_display_encoding = BytesDisplayEncoding::kHex;
     size_t value_size = 0;
     std::vector<uint8_t> current_value_bytes;
     std::string current_display_value;

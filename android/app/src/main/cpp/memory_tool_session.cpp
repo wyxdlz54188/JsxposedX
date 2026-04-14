@@ -8,7 +8,7 @@ void SearchSession::Clear() {
     type = SearchValueType::kI32;
     exact_mode = true;
     little_endian = true;
-    bytes_display_as_text = false;
+    bytes_display_encoding = BytesDisplayEncoding::kHex;
     value_size = 0;
     current_value_bytes.clear();
     current_display_value.clear();

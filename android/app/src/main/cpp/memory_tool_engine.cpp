@@ -4,6 +4,7 @@
 #include <iterator>
 #include <stdexcept>
 #include <thread>
+#include <unordered_set>
 #include <utility>
 
 #include "memory_tool_reader.h"
@@ -13,8 +14,6 @@
 namespace memory_tool {
 
 namespace {
-
-constexpr size_t kMaxParallelFirstScanWorkers = 6;
 
 uint64_t ElapsedMilliseconds(const std::chrono::steady_clock::time_point& started_at) {
     if (started_at == std::chrono::steady_clock::time_point{}) {
@@ -27,10 +26,17 @@ uint64_t ElapsedMilliseconds(const std::chrono::steady_clock::time_point& starte
 
 const MemoryRegion* FindRegionByStart(const std::vector<MemoryRegion>& regions,
                                       uint64_t region_start) {
-    const auto iterator = std::find_if(regions.begin(), regions.end(), [region_start](const MemoryRegion& region) {
-        return region.start_address == region_start;
-    });
+    const auto iterator = std::lower_bound(
+        regions.begin(),
+        regions.end(),
+        region_start,
+        [](const MemoryRegion& region, uint64_t start_address) {
+            return region.start_address < start_address;
+        });
     if (iterator == regions.end()) {
+        return nullptr;
+    }
+    if (iterator->start_address != region_start) {
         return nullptr;
     }
     return &(*iterator);
@@ -42,11 +48,14 @@ std::vector<MemoryRegion> FilterRegionsByTypeKeys(const std::vector<MemoryRegion
         return regions;
     }
 
+    const std::unordered_set<std::string> allowed_key_set(
+        allowed_keys.begin(),
+        allowed_keys.end());
     std::vector<MemoryRegion> filtered;
     filtered.reserve(regions.size());
     for (const MemoryRegion& region : regions) {
         const std::string region_key = ClassifyMemoryRegion(region);
-        if (std::find(allowed_keys.begin(), allowed_keys.end(), region_key) != allowed_keys.end()) {
+        if (allowed_key_set.find(region_key) != allowed_key_set.end()) {
             filtered.push_back(region);
         }
     }
@@ -60,9 +69,7 @@ size_t ResolveFirstScanWorkerCount(size_t region_count) {
 
     const unsigned int hardware_workers = std::thread::hardware_concurrency();
     const size_t preferred_workers = hardware_workers == 0 ? 4U : hardware_workers;
-    return std::max<size_t>(
-        1,
-        std::min(region_count, std::min(preferred_workers, kMaxParallelFirstScanWorkers)));
+    return std::max<size_t>(1, std::min(region_count, preferred_workers));
 }
 
 std::vector<std::vector<MemoryRegion>> PartitionRegionsForWorkers(
@@ -73,14 +80,30 @@ std::vector<std::vector<MemoryRegion>> PartitionRegionsForWorkers(
     }
 
     std::vector<std::vector<MemoryRegion>> buckets(worker_count);
-    std::vector<uint64_t> bucket_sizes(worker_count, 0);
+    uint64_t total_bytes = 0;
     for (const MemoryRegion& region : regions) {
-        const auto iterator =
-            std::min_element(bucket_sizes.begin(), bucket_sizes.end());
-        const size_t bucket_index =
-            static_cast<size_t>(std::distance(bucket_sizes.begin(), iterator));
+        total_bytes += region.size;
+    }
+    const uint64_t target_bucket_bytes =
+        std::max<uint64_t>(1, total_bytes / worker_count);
+
+    size_t bucket_index = 0;
+    uint64_t current_bucket_bytes = 0;
+    for (size_t region_index = 0; region_index < regions.size(); ++region_index) {
+        const MemoryRegion& region = regions[region_index];
         buckets[bucket_index].push_back(region);
-        bucket_sizes[bucket_index] += region.size;
+        current_bucket_bytes += region.size;
+
+        const size_t remaining_regions = regions.size() - region_index - 1;
+        const bool canAdvance = bucket_index + 1 < worker_count;
+        const bool shouldAdvance =
+            canAdvance &&
+            current_bucket_bytes >= target_bucket_bytes &&
+            remaining_regions >= (worker_count - bucket_index - 1);
+        if (shouldAdvance) {
+            ++bucket_index;
+            current_bucket_bytes = 0;
+        }
     }
     return buckets;
 }
@@ -167,8 +190,9 @@ std::vector<MemoryValuePreview> MemoryToolEngine::ReadMemoryValues(
         preview.display_value = FormatDisplayValue(request.type,
                                                    buffer,
                                                    session_.little_endian,
-                                                   request.type == SearchValueType::kBytes &&
-                                                       session_.bytes_display_as_text);
+                                                   request.type == SearchValueType::kBytes
+                                                       ? session_.bytes_display_encoding
+                                                       : BytesDisplayEncoding::kHex);
         previews.push_back(std::move(preview));
     }
     return previews;
@@ -191,7 +215,8 @@ void MemoryToolEngine::FirstScan(int pid,
 
     const SearchValueType value_type = value.type;
     const bool little_endian = value.little_endian;
-    const bool bytes_display_as_text = ShouldDisplayBytesAsText(value);
+    const BytesDisplayEncoding bytes_display_encoding =
+        ResolveBytesDisplayEncoding(value);
     const uint64_t generation = [this, pid]() {
         std::lock_guard<std::mutex> lock(mutex_);
         session_.Clear();
@@ -204,7 +229,7 @@ void MemoryToolEngine::FirstScan(int pid,
                  pattern = std::move(pattern),
                  value_type,
                  little_endian,
-                 bytes_display_as_text,
+                 bytes_display_encoding,
                  range_section_keys,
                  scan_all_readable_regions]() {
         try {
@@ -322,26 +347,17 @@ void MemoryToolEngine::FirstScan(int pid,
                                std::make_move_iterator(entries.begin()),
                                std::make_move_iterator(entries.end()));
             }
-            std::sort(results.begin(),
-                      results.end(),
-                      [](const SearchResultEntry& left, const SearchResultEntry& right) {
-                          if (left.region_start != right.region_start) {
-                              return left.region_start < right.region_start;
-                          }
-                          return left.address < right.address;
-                      });
-
             SearchSession next_session;
             next_session.has_active_session = true;
             next_session.pid = pid;
             next_session.type = value_type;
             next_session.exact_mode = true;
             next_session.little_endian = little_endian;
-            next_session.bytes_display_as_text = bytes_display_as_text;
+            next_session.bytes_display_encoding = bytes_display_encoding;
             next_session.value_size = pattern.size();
             next_session.current_value_bytes = pattern;
             next_session.current_display_value = FormatDisplayValue(
-                value_type, pattern, little_endian, bytes_display_as_text);
+                value_type, pattern, little_endian, bytes_display_encoding);
             next_session.regions = std::move(regions);
             next_session.results = std::move(results);
             FinishTaskSuccess(generation, std::move(next_session), result_count);
@@ -381,14 +397,15 @@ void MemoryToolEngine::NextScan(const SearchValue& value, SearchMatchMode match_
     }();
 
     const bool little_endian = value.little_endian;
-    const bool bytes_display_as_text = ShouldDisplayBytesAsText(value);
+    const BytesDisplayEncoding bytes_display_encoding =
+        ResolveBytesDisplayEncoding(value);
 
     std::thread([this,
                  generation,
                  session_snapshot = std::move(session_snapshot),
                  pattern = std::move(pattern),
                  little_endian,
-                 bytes_display_as_text]() mutable {
+                 bytes_display_encoding]() mutable {
         try {
             ProcessMemoryReader reader(session_snapshot.pid);
             std::vector<SearchResultEntry> results = ::memory_tool::NextScan(
@@ -403,13 +420,13 @@ void MemoryToolEngine::NextScan(const SearchValue& value, SearchMatchMode match_
             session_snapshot.results = std::move(results);
             session_snapshot.value_size = pattern.size();
             session_snapshot.little_endian = little_endian;
-            session_snapshot.bytes_display_as_text = bytes_display_as_text;
+            session_snapshot.bytes_display_encoding = bytes_display_encoding;
             session_snapshot.current_value_bytes = pattern;
             session_snapshot.current_display_value = FormatDisplayValue(
                 session_snapshot.type,
                 pattern,
                 little_endian,
-                bytes_display_as_text);
+                bytes_display_encoding);
             FinishTaskSuccess(generation, std::move(session_snapshot), result_count);
         } catch (const std::exception& exception) {
             FinishTaskFailure(generation, exception.what());

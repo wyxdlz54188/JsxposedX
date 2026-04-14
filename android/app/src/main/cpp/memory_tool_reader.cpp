@@ -1,5 +1,6 @@
 #include "memory_tool_reader.h"
 
+#include <algorithm>
 #include <cerrno>
 #include <fcntl.h>
 #include <signal.h>
@@ -11,7 +12,13 @@ namespace memory_tool {
 
 namespace {
 
-constexpr size_t kReadManyBatchSize = 128;
+size_t ResolveReadManyBatchSize() {
+    const long raw_iov_max = sysconf(_SC_IOV_MAX);
+    if (raw_iov_max <= 0) {
+        return 1024;
+    }
+    return static_cast<size_t>(raw_iov_max);
+}
 
 }  // namespace
 
@@ -34,14 +41,24 @@ bool ProcessMemoryReader::Read(uint64_t address,
 
     buffer->clear();
     buffer->resize(size);
-    if (ReadWithProcessVmReadv(address, size, buffer)) {
-        return true;
-    }
-    if (ReadWithPread(address, size, buffer)) {
+    if (ReadInto(address, size, buffer->data())) {
         return true;
     }
     buffer->clear();
     return false;
+}
+
+bool ProcessMemoryReader::ReadInto(uint64_t address,
+                                   size_t size,
+                                   uint8_t* buffer) const {
+    if (buffer == nullptr || size == 0) {
+        return false;
+    }
+
+    if (ReadWithProcessVmReadv(address, size, buffer)) {
+        return true;
+    }
+    return ReadWithPread(address, size, buffer);
 }
 
 bool ProcessMemoryReader::ReadMany(const std::vector<uint64_t>& addresses,
@@ -57,15 +74,45 @@ bool ProcessMemoryReader::ReadMany(const std::vector<uint64_t>& addresses,
         return true;
     }
 
+    FlatReadBatch batch;
+    const bool all_success = ReadManyFlat(addresses, size, &batch);
+    for (size_t index = 0; index < addresses.size(); ++index) {
+        if (!batch.HasValue(index)) {
+            continue;
+        }
+        const uint8_t* value = batch.ValueAt(index);
+        (*buffers)[index].assign(value, value + static_cast<std::ptrdiff_t>(size));
+    }
+    return all_success;
+}
+
+bool ProcessMemoryReader::ReadManyFlat(const std::vector<uint64_t>& addresses,
+                                       size_t size,
+                                       FlatReadBatch* batch) const {
+    if (batch == nullptr || size == 0) {
+        return false;
+    }
+
+    batch->Reset(addresses.size(), size);
+    if (addresses.empty()) {
+        return true;
+    }
+
     bool all_success = true;
-    for (size_t start = 0; start < addresses.size(); start += kReadManyBatchSize) {
-        const size_t count = std::min(kReadManyBatchSize, addresses.size() - start);
-        std::vector<uint8_t> batch_storage(count * size);
+    const size_t batch_size = ResolveReadManyBatchSize();
+    for (size_t start = 0; start < addresses.size(); start += batch_size) {
+        const size_t count = std::min(batch_size, addresses.size() - start);
         std::vector<iovec> local_iov(count);
         std::vector<iovec> remote_iov(count);
         for (size_t index = 0; index < count; ++index) {
-            local_iov[index] = iovec{batch_storage.data() + (index * size), size};
-            remote_iov[index] = iovec{reinterpret_cast<void*>(addresses[start + index]), size};
+            local_iov[index] = iovec{
+                batch->values.data() + ((start + index) * size),
+                size,
+            };
+            remote_iov[index] = iovec{
+                reinterpret_cast<void*>(addresses[start + index]),
+                size,
+            };
         }
 
         const size_t expected_size = count * size;
@@ -76,21 +123,28 @@ bool ProcessMemoryReader::ReadMany(const std::vector<uint64_t>& addresses,
                                                     static_cast<unsigned long>(count),
                                                     0);
         if (bytes_read == static_cast<ssize_t>(expected_size)) {
-            for (size_t index = 0; index < count; ++index) {
-                (*buffers)[start + index].assign(batch_storage.begin() +
-                                                     static_cast<std::ptrdiff_t>(index * size),
-                                                 batch_storage.begin() +
-                                                     static_cast<std::ptrdiff_t>((index + 1) * size));
-            }
+            std::fill(batch->success_flags.begin() + static_cast<std::ptrdiff_t>(start),
+                      batch->success_flags.begin() + static_cast<std::ptrdiff_t>(start + count),
+                      static_cast<uint8_t>(1));
             continue;
         }
 
         all_success = false;
-        for (size_t index = 0; index < count; ++index) {
-            std::vector<uint8_t> single;
-            if (Read(addresses[start + index], size, &single)) {
-                (*buffers)[start + index] = std::move(single);
+        size_t completed_count = 0;
+        if (bytes_read > 0) {
+            completed_count = static_cast<size_t>(bytes_read) / size;
+            std::fill(batch->success_flags.begin() + static_cast<std::ptrdiff_t>(start),
+                      batch->success_flags.begin() +
+                          static_cast<std::ptrdiff_t>(start + completed_count),
+                      static_cast<uint8_t>(1));
+        }
+
+        for (size_t index = completed_count; index < count; ++index) {
+            uint8_t* destination = batch->values.data() + ((start + index) * size);
+            if (!ReadInto(addresses[start + index], size, destination)) {
+                continue;
             }
+            batch->success_flags[start + index] = 1;
         }
     }
 
@@ -99,8 +153,8 @@ bool ProcessMemoryReader::ReadMany(const std::vector<uint64_t>& addresses,
 
 bool ProcessMemoryReader::ReadWithProcessVmReadv(uint64_t address,
                                                  size_t size,
-                                                 std::vector<uint8_t>* buffer) const {
-    iovec local_iov{buffer->data(), size};
+                                                 void* buffer) const {
+    iovec local_iov{buffer, size};
     iovec remote_iov{reinterpret_cast<void*>(address), size};
     const ssize_t bytes_read = process_vm_readv(pid_, &local_iov, 1, &remote_iov, 1, 0);
     return bytes_read == static_cast<ssize_t>(size);
@@ -108,13 +162,13 @@ bool ProcessMemoryReader::ReadWithProcessVmReadv(uint64_t address,
 
 bool ProcessMemoryReader::ReadWithPread(uint64_t address,
                                         size_t size,
-                                        std::vector<uint8_t>* buffer) const {
+                                        void* buffer) const {
     if (mem_fd_ < 0) {
         return false;
     }
 
     const ssize_t bytes_read = pread64(mem_fd_,
-                                       buffer->data(),
+                                       buffer,
                                        size,
                                        static_cast<off64_t>(address));
     return bytes_read == static_cast<ssize_t>(size);

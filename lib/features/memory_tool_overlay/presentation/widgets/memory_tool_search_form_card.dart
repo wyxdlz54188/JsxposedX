@@ -107,9 +107,8 @@ class MemoryToolSearchFormCard extends StatelessWidget {
               mapMemorySearchRangePresetLabel(context, preset),
           onSelected: isRunning ? null : onRangePresetChanged,
         ),
-        if (state.selectedRangePreset != MemorySearchRangePresetEnum.all) ...<
-          Widget
-        >[
+        if (state.selectedRangePreset !=
+            MemorySearchRangePresetEnum.all) ...<Widget>[
           SizedBox(height: 10.r),
           _InlineHint(
             message: context.l10n.memoryToolRangePresetPendingHint,
@@ -125,37 +124,53 @@ class MemoryToolSearchFormCard extends StatelessWidget {
             onToggled: isRunning ? null : onCustomRangeSectionToggled,
           ),
         ],
-        SizedBox(height: 12.r),
-        DecoratedBox(
-          decoration: BoxDecoration(
-            color: context.colorScheme.surfaceContainerHighest.withValues(
-              alpha: 0.52,
-            ),
-            borderRadius: BorderRadius.circular(14.r),
-            border: Border.all(
-              color: context.colorScheme.outlineVariant.withValues(alpha: 0.7),
-            ),
+        if (state.isTextType) ...<Widget>[
+          SizedBox(height: 12.r),
+          _FieldLabel(label: context.l10n.memoryToolTextEncodingLabel),
+          SizedBox(height: 6.r),
+          _MemoryToolChoiceChipWrap<bool>(
+            values: const <bool>[false, true],
+            selectedValue: state.usesUtf16LeTextEncoding,
+            labelBuilder: (useUtf16Le) => useUtf16Le
+                ? context.l10n.memoryToolTextEncodingUtf16Le
+                : context.l10n.memoryToolTextEncodingUtf8,
+            onSelected: isRunning ? null : onEndianChanged,
           ),
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 12.r, vertical: 8.r),
-            child: Row(
-              children: <Widget>[
-                Expanded(
-                  child: Text(
-                    context.l10n.memoryToolEndianLabel,
-                    style: context.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
+        ] else if (!state.isBytesType) ...<Widget>[
+          SizedBox(height: 12.r),
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: context.colorScheme.surfaceContainerHighest.withValues(
+                alpha: 0.52,
+              ),
+              borderRadius: BorderRadius.circular(14.r),
+              border: Border.all(
+                color: context.colorScheme.outlineVariant.withValues(
+                  alpha: 0.7,
+                ),
+              ),
+            ),
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 12.r, vertical: 8.r),
+              child: Row(
+                children: <Widget>[
+                  Expanded(
+                    child: Text(
+                      context.l10n.memoryToolEndianLabel,
+                      style: context.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
-                ),
-                Switch.adaptive(
-                  value: state.isLittleEndian,
-                  onChanged: isRunning ? null : onEndianChanged,
-                ),
-              ],
+                  Switch.adaptive(
+                    value: state.isLittleEndian,
+                    onChanged: isRunning ? null : onEndianChanged,
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
+        ],
         if (state.validationError != null) ...<Widget>[
           SizedBox(height: 10.r),
           Text(
@@ -254,10 +269,7 @@ class _FieldLabel extends StatelessWidget {
 }
 
 class _InlineHint extends StatelessWidget {
-  const _InlineHint({
-    required this.message,
-    required this.color,
-  });
+  const _InlineHint({required this.message, required this.color});
 
   final String message;
   final Color color;
@@ -292,7 +304,8 @@ class _MemoryToolSearchValueField extends StatelessWidget {
     final isBytes = valueTypeOption == MemorySearchValueTypeOptionEnum.bytes;
     final isText = valueTypeOption == MemorySearchValueTypeOptionEnum.text;
     final isFloatType =
-        selectedType == SearchValueType.f32 || selectedType == SearchValueType.f64;
+        selectedType == SearchValueType.f32 ||
+        selectedType == SearchValueType.f64;
     final keyboardType = isBytes
         ? TextInputType.visiblePassword
         : isText
@@ -348,8 +361,7 @@ class _MemoryToolSearchValueField extends StatelessWidget {
       borderRadius: BorderRadius.circular(14.r),
       borderSide: BorderSide(
         color:
-            color ??
-            context.colorScheme.outlineVariant.withValues(alpha: 0.7),
+            color ?? context.colorScheme.outlineVariant.withValues(alpha: 0.7),
         width: width,
       ),
     );

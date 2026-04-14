@@ -1739,6 +1739,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get memoryToolFieldRangeSection => '自定义区段';
 
   @override
+  String get memoryToolTextEncodingLabel => '文本编码';
+
+  @override
+  String get memoryToolTextEncodingUtf8 => 'UTF-8';
+
+  @override
+  String get memoryToolTextEncodingUtf16Le => 'UTF-16LE';
+
+  @override
   String get memoryToolSearchExact => '精确搜索';
 
   @override

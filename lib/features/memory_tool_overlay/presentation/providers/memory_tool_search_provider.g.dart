@@ -176,7 +176,7 @@ final class MemoryToolSearchFormProvider
 }
 
 String _$memoryToolSearchFormHash() =>
-    r'8dbde8b0359becf321c3934298db6db418749934';
+    r'ab3067ce96b93895c509920960d5e6902ece8832';
 
 abstract class _$MemoryToolSearchForm extends $Notifier<MemoryToolSearchState> {
   MemoryToolSearchState build();

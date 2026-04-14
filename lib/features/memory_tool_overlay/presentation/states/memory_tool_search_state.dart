@@ -50,6 +50,8 @@ abstract class MemoryToolSearchState with _$MemoryToolSearchState {
   bool get isTextType =>
       effectiveValueTypeOption == MemorySearchValueTypeOptionEnum.text;
 
+  bool get usesUtf16LeTextEncoding => isTextType && isLittleEndian;
+
   bool get shouldShowAdvancedTypeSelector =>
       selectedValueCategory == MemorySearchValueCategoryEnum.advanced;
 

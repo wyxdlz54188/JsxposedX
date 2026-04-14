@@ -1766,6 +1766,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get memoryToolFieldRangeSection => 'Custom Sections';
 
   @override
+  String get memoryToolTextEncodingLabel => 'Text Encoding';
+
+  @override
+  String get memoryToolTextEncodingUtf8 => 'UTF-8';
+
+  @override
+  String get memoryToolTextEncodingUtf16Le => 'UTF-16LE';
+
+  @override
   String get memoryToolSearchExact => 'Exact Scan';
 
   @override

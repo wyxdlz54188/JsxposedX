@@ -3434,6 +3434,24 @@ abstract class AppLocalizations {
   /// **'自定义区段'**
   String get memoryToolFieldRangeSection;
 
+  /// No description provided for @memoryToolTextEncodingLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'文本编码'**
+  String get memoryToolTextEncodingLabel;
+
+  /// No description provided for @memoryToolTextEncodingUtf8.
+  ///
+  /// In zh, this message translates to:
+  /// **'UTF-8'**
+  String get memoryToolTextEncodingUtf8;
+
+  /// No description provided for @memoryToolTextEncodingUtf16Le.
+  ///
+  /// In zh, this message translates to:
+  /// **'UTF-16LE'**
+  String get memoryToolTextEncodingUtf16Le;
+
   /// No description provided for @memoryToolSearchExact.
   ///
   /// In zh, this message translates to:

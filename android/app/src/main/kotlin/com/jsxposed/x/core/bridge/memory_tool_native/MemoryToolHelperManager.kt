@@ -116,9 +116,10 @@ class MemoryToolHelperManager(private val context: Context) {
             return "Memory tool helper daemon did not start."
         }
 
-        val tail = helperLog
-            .lines()
-            .takeLast(20)
+        val lines = helperLog.lines()
+        val startIndex = (lines.size - 20).coerceAtLeast(0)
+        val tail = lines
+            .subList(startIndex, lines.size)
             .joinToString(separator = "\n")
 
         return "Memory tool helper daemon did not start.\n$tail"

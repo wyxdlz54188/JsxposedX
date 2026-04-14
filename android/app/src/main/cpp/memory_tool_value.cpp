@@ -1,8 +1,10 @@
 #include "memory_tool_value.h"
 
 #include <algorithm>
+#include <codecvt>
 #include <cstring>
 #include <iomanip>
+#include <locale>
 #include <sstream>
 #include <stdexcept>
 
@@ -54,6 +56,26 @@ std::string FormatHex(const std::vector<uint8_t>& bytes) {
 
 std::string FormatUtf8Text(const std::vector<uint8_t>& bytes) {
     return std::string(bytes.begin(), bytes.end());
+}
+
+std::string FormatUtf16LeText(const std::vector<uint8_t>& bytes) {
+    if (bytes.empty()) {
+        return {};
+    }
+    if (bytes.size() % 2 != 0) {
+        return FormatHex(bytes);
+    }
+
+    std::u16string text;
+    text.reserve(bytes.size() / 2);
+    for (size_t index = 0; index < bytes.size(); index += 2) {
+        const uint16_t code_unit = static_cast<uint16_t>(bytes[index]) |
+                                   (static_cast<uint16_t>(bytes[index + 1]) << 8);
+        text.push_back(static_cast<char16_t>(code_unit));
+    }
+
+    std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> converter;
+    return converter.to_bytes(text);
 }
 
 }  // namespace
@@ -135,15 +157,23 @@ bool BuildSearchPattern(const SearchValue& value,
     return false;
 }
 
-bool ShouldDisplayBytesAsText(const SearchValue& value) {
-    return value.type == SearchValueType::kBytes && !value.text_value.empty() &&
-           !value.bytes_value.empty();
+BytesDisplayEncoding ResolveBytesDisplayEncoding(const SearchValue& value) {
+    if (value.type != SearchValueType::kBytes || value.bytes_value.empty()) {
+        return BytesDisplayEncoding::kHex;
+    }
+    if (value.text_value.rfind("__jsx_text_utf16le__:", 0) == 0) {
+        return BytesDisplayEncoding::kUtf16Le;
+    }
+    if (value.text_value.rfind("__jsx_text_utf8__:", 0) == 0) {
+        return BytesDisplayEncoding::kUtf8;
+    }
+    return BytesDisplayEncoding::kHex;
 }
 
 std::string FormatDisplayValue(SearchValueType type,
                                const std::vector<uint8_t>& raw_bytes,
                                bool little_endian,
-                               bool bytes_as_text) {
+                               BytesDisplayEncoding bytes_display_encoding) {
     std::ostringstream stream;
     switch (type) {
         case SearchValueType::kI8:
@@ -165,8 +195,13 @@ std::string FormatDisplayValue(SearchValueType type,
             stream << DecodeBytes<double>(raw_bytes, little_endian);
             return stream.str();
         case SearchValueType::kBytes:
-            if (bytes_as_text) {
-                return FormatUtf8Text(raw_bytes);
+            switch (bytes_display_encoding) {
+                case BytesDisplayEncoding::kUtf8:
+                    return FormatUtf8Text(raw_bytes);
+                case BytesDisplayEncoding::kUtf16Le:
+                    return FormatUtf16LeText(raw_bytes);
+                case BytesDisplayEncoding::kHex:
+                    break;
             }
             return FormatHex(raw_bytes);
     }

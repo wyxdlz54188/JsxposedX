@@ -199,6 +199,9 @@ class MemoryToolSearchForm extends _$MemoryToolSearchForm {
     final advancedOptions =
         memorySearchAdvancedValueOptions[MemorySearchValueCategoryEnum.advanced] ??
         const <MemorySearchValueTypeOptionEnum>[];
+    final isSwitchingToText =
+        category == MemorySearchValueCategoryEnum.text &&
+        state.selectedValueCategory != MemorySearchValueCategoryEnum.text;
 
     final nextTypeOption = switch (category) {
       MemorySearchValueCategoryEnum.advanced =>
@@ -211,6 +214,7 @@ class MemoryToolSearchForm extends _$MemoryToolSearchForm {
     state = state.copyWith(
       selectedValueCategory: category,
       selectedValueTypeOption: nextTypeOption,
+      isLittleEndian: isSwitchingToText ? false : state.isLittleEndian,
       validationError: null,
     );
   }
@@ -355,12 +359,18 @@ class MemoryToolSearchForm extends _$MemoryToolSearchForm {
     final trimmedValue = state.value.trim();
     final nativeType = state.nativeSearchValueType!;
     final bytesValue = state.isTextType
-        ? Uint8List.fromList(utf8.encode(trimmedValue))
+        ? Uint8List.fromList(
+            state.usesUtf16LeTextEncoding
+                ? _encodeUtf16Le(trimmedValue)
+                : utf8.encode(trimmedValue),
+          )
         : nativeType == SearchValueType.bytes
         ? _parseBytes(trimmedValue)
         : null;
     final textValue = state.isTextType
-        ? trimmedValue
+        ? state.usesUtf16LeTextEncoding
+              ? '__jsx_text_utf16le__:$trimmedValue'
+              : '__jsx_text_utf8__:$trimmedValue'
         : nativeType == SearchValueType.bytes
         ? null
         : trimmedValue;
@@ -413,5 +423,14 @@ class MemoryToolSearchForm extends _$MemoryToolSearchForm {
     }
 
     return Uint8List.fromList(bytes);
+  }
+
+  List<int> _encodeUtf16Le(String value) {
+    final bytes = <int>[];
+    for (final unit in value.codeUnits) {
+      bytes.add(unit & 0xFF);
+      bytes.add((unit >> 8) & 0xFF);
+    }
+    return bytes;
   }
 }
