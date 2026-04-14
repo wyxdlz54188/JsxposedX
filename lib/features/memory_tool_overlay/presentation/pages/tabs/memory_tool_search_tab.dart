@@ -26,6 +26,8 @@ class MemoryToolSearchTab extends HookConsumerWidget {
     final hasMatchingSession = ref.watch(hasMatchingSearchSessionProvider);
     final hasRunningTask = ref.watch(hasRunningSearchTaskProvider);
     final previousTaskStatus = useRef<SearchTaskStatus?>(null);
+    final previousSelectedPid = useRef<int?>(selectedPid);
+    final previousHasMatchingSession = useRef<bool?>(hasMatchingSession);
 
     useEffect(() {
       if (!hasRunningTask) {
@@ -57,14 +59,20 @@ class MemoryToolSearchTab extends HookConsumerWidget {
     }, [taskStateAsync]);
 
     useEffect(() {
-      ref.read(memoryToolResultSelectionProvider.notifier).clear();
+      final previousPid = previousSelectedPid.value;
+      if (previousPid != null && previousPid != selectedPid) {
+        ref.read(memoryToolResultSelectionProvider.notifier).clear();
+      }
+      previousSelectedPid.value = selectedPid;
       return null;
     }, [selectedPid]);
 
     useEffect(() {
-      if (!hasMatchingSession) {
+      final previousValue = previousHasMatchingSession.value;
+      if (previousValue == true && !hasMatchingSession) {
         ref.read(memoryToolResultSelectionProvider.notifier).clear();
       }
+      previousHasMatchingSession.value = hasMatchingSession;
       return null;
     }, [hasMatchingSession]);
 
