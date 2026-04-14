@@ -263,14 +263,20 @@ class _MemoryToolSearchValueField extends StatelessWidget {
   Widget build(BuildContext context) {
     final isBytes = valueTypeOption == MemorySearchValueTypeOptionEnum.bytes;
     final isText = valueTypeOption == MemorySearchValueTypeOptionEnum.text;
+    final isXor = valueTypeOption == MemorySearchValueTypeOptionEnum.xor;
+    final isAuto = valueTypeOption == MemorySearchValueTypeOptionEnum.auto;
     final isFloatType =
+        isAuto ||
         selectedType == SearchValueType.f32 ||
         selectedType == SearchValueType.f64;
     final keyboardType = isBytes
         ? TextInputType.visiblePassword
         : isText
         ? TextInputType.text
-        : TextInputType.numberWithOptions(decimal: isFloatType, signed: true);
+        : TextInputType.numberWithOptions(
+            decimal: isFloatType,
+            signed: !isXor,
+          );
 
     return TextField(
       controller: controller,

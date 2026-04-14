@@ -45,13 +45,21 @@ abstract class MemoryToolSearchState with _$MemoryToolSearchState {
 
   SearchValueType? get nativeSearchValueType => effectiveValueTypeOption.nativeType;
 
-  bool get supportsCurrentType => nativeSearchValueType != null;
+  SearchValueType get requestSearchValueType => effectiveValueTypeOption.requestType;
+
+  bool get supportsCurrentType => effectiveValueTypeOption.isImplemented;
 
   bool get isBytesType =>
       effectiveValueTypeOption == MemorySearchValueTypeOptionEnum.bytes;
 
   bool get isTextType =>
       effectiveValueTypeOption == MemorySearchValueTypeOptionEnum.text;
+
+  bool get isXorType =>
+      effectiveValueTypeOption == MemorySearchValueTypeOptionEnum.xor;
+
+  bool get isAutoType =>
+      effectiveValueTypeOption == MemorySearchValueTypeOptionEnum.auto;
 
   bool get usesUtf16LeTextEncoding => isTextType && isLittleEndian;
 

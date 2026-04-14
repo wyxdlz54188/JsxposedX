@@ -1,9 +1,11 @@
 #include "memory_tool_value.h"
 
 #include <algorithm>
+#include <cmath>
 #include <codecvt>
 #include <cstring>
 #include <iomanip>
+#include <limits>
 #include <locale>
 #include <sstream>
 #include <stdexcept>
@@ -11,6 +13,9 @@
 namespace memory_tool {
 
 namespace {
+
+constexpr char kXorPrefix[] = "__jsx_xor__:";
+constexpr char kAutoPrefix[] = "__jsx_auto__:";
 
 template <typename T>
 std::vector<uint8_t> EncodeBytes(T value, bool little_endian) {
@@ -78,6 +83,37 @@ std::string FormatUtf16LeText(const std::vector<uint8_t>& bytes) {
     return converter.to_bytes(text);
 }
 
+bool HasPrefix(const std::string& value, const char* prefix) {
+    return value.rfind(prefix, 0) == 0;
+}
+
+std::string StripPrefix(const std::string& value, const char* prefix) {
+    if (!HasPrefix(value, prefix)) {
+        return value;
+    }
+    return value.substr(std::char_traits<char>::length(prefix));
+}
+
+template <typename T>
+void AppendVariant(std::vector<SearchPatternVariant>* variants,
+                   SearchValueType type,
+                   T value,
+                   bool little_endian) {
+    if (variants == nullptr) {
+        return;
+    }
+    SearchPatternVariant variant;
+    variant.type = type;
+    variant.pattern = EncodeBytes<T>(value, little_endian);
+    variants->push_back(std::move(variant));
+}
+
+bool LooksLikeDecimalNumber(const std::string& value) {
+    return value.find('.') != std::string::npos ||
+           value.find('e') != std::string::npos ||
+           value.find('E') != std::string::npos;
+}
+
 }  // namespace
 
 size_t ResolveValueByteLength(SearchValueType type, size_t requested_length) {
@@ -98,6 +134,16 @@ size_t ResolveValueByteLength(SearchValueType type, size_t requested_length) {
             return requested_length;
     }
     return requested_length;
+}
+
+SpecialSearchMode ResolveSpecialSearchMode(const SearchValue& value) {
+    if (HasPrefix(value.text_value, kXorPrefix)) {
+        return SpecialSearchMode::kXor;
+    }
+    if (HasPrefix(value.text_value, kAutoPrefix)) {
+        return SpecialSearchMode::kAuto;
+    }
+    return SpecialSearchMode::kNone;
 }
 
 bool BuildSearchPattern(const SearchValue& value,
@@ -155,6 +201,116 @@ bool BuildSearchPattern(const SearchValue& value,
         *error = "Unsupported search value type.";
     }
     return false;
+}
+
+bool ParseXorTargetValue(const SearchValue& value,
+                         uint32_t* target_value,
+                         std::string* display_value,
+                         std::string* error) {
+    if (target_value == nullptr) {
+        return false;
+    }
+
+    try {
+        const std::string raw_value = StripPrefix(value.text_value, kXorPrefix);
+        const unsigned long long parsed = std::stoull(raw_value);
+        if (parsed > static_cast<unsigned long long>(std::numeric_limits<uint32_t>::max())) {
+            if (error != nullptr) {
+                *error = "XOR value is out of range.";
+            }
+            return false;
+        }
+        *target_value = static_cast<uint32_t>(parsed);
+        if (display_value != nullptr) {
+            *display_value = raw_value;
+        }
+        return true;
+    } catch (const std::exception& exception) {
+        if (error != nullptr) {
+            *error = exception.what();
+        }
+        return false;
+    }
+}
+
+bool BuildAutoSearchPlan(const SearchValue& value,
+                         AutoSearchPlan* plan,
+                         std::string* error) {
+    if (plan == nullptr) {
+        return false;
+    }
+
+    plan->variants.clear();
+    plan->display_value.clear();
+    try {
+        const std::string raw_value = StripPrefix(value.text_value, kAutoPrefix);
+        plan->display_value = raw_value;
+
+        if (LooksLikeDecimalNumber(raw_value)) {
+            const double parsed = std::stod(raw_value);
+            AppendVariant<float>(&plan->variants,
+                                 SearchValueType::kF32,
+                                 static_cast<float>(parsed),
+                                 value.little_endian);
+            AppendVariant<double>(&plan->variants,
+                                  SearchValueType::kF64,
+                                  parsed,
+                                  value.little_endian);
+            return !plan->variants.empty();
+        }
+
+        const long long parsed_integer = std::stoll(raw_value);
+        if (parsed_integer >= static_cast<long long>(std::numeric_limits<int32_t>::min()) &&
+            parsed_integer <= static_cast<long long>(std::numeric_limits<int32_t>::max())) {
+            AppendVariant<int32_t>(&plan->variants,
+                                   SearchValueType::kI32,
+                                   static_cast<int32_t>(parsed_integer),
+                                   value.little_endian);
+        }
+
+        const double as_double = static_cast<double>(parsed_integer);
+        const float as_float = static_cast<float>(parsed_integer);
+        if (std::isfinite(as_float) &&
+            static_cast<long long>(std::llround(static_cast<double>(as_float))) == parsed_integer) {
+            AppendVariant<float>(&plan->variants,
+                                 SearchValueType::kF32,
+                                 as_float,
+                                 value.little_endian);
+        }
+
+        AppendVariant<int64_t>(&plan->variants,
+                               SearchValueType::kI64,
+                               static_cast<int64_t>(parsed_integer),
+                               value.little_endian);
+        if (std::isfinite(as_double) &&
+            static_cast<long long>(std::llround(as_double)) == parsed_integer) {
+            AppendVariant<double>(&plan->variants,
+                                  SearchValueType::kF64,
+                                  as_double,
+                                  value.little_endian);
+        }
+        if (parsed_integer >= static_cast<long long>(std::numeric_limits<int16_t>::min()) &&
+            parsed_integer <= static_cast<long long>(std::numeric_limits<int16_t>::max())) {
+            AppendVariant<int16_t>(&plan->variants,
+                                   SearchValueType::kI16,
+                                   static_cast<int16_t>(parsed_integer),
+                                   value.little_endian);
+        }
+        if (parsed_integer >= static_cast<long long>(std::numeric_limits<int8_t>::min()) &&
+            parsed_integer <= static_cast<long long>(std::numeric_limits<int8_t>::max())) {
+            AppendVariant<int8_t>(&plan->variants,
+                                  SearchValueType::kI8,
+                                  static_cast<int8_t>(parsed_integer),
+                                  value.little_endian);
+        }
+
+        return !plan->variants.empty();
+    } catch (const std::exception& exception) {
+        if (error != nullptr) {
+            *error = exception.what();
+        }
+        return false;
+    }
 }
 
 BytesDisplayEncoding ResolveBytesDisplayEncoding(const SearchValue& value) {

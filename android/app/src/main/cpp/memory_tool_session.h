@@ -30,6 +30,12 @@ enum class SearchTaskStatus : int {
     kFailed = 4,
 };
 
+enum class SearchRuntimeMode : int {
+    kStandard = 0,
+    kXor = 1,
+    kAuto = 2,
+};
+
 enum class BytesDisplayEncoding : int {
     kHex = 0,
     kUtf8 = 1,
@@ -55,6 +61,7 @@ struct MemoryRegion {
 struct SearchResultEntry {
     uint64_t address = 0;
     uint64_t region_start = 0;
+    SearchValueType matched_type = SearchValueType::kI32;
 };
 
 struct SearchResultView {
@@ -108,6 +115,7 @@ struct SearchSession {
     bool has_active_session = false;
     int pid = 0;
     SearchValueType type = SearchValueType::kI32;
+    SearchRuntimeMode mode = SearchRuntimeMode::kStandard;
     bool exact_mode = true;
     bool little_endian = true;
     BytesDisplayEncoding bytes_display_encoding = BytesDisplayEncoding::kHex;

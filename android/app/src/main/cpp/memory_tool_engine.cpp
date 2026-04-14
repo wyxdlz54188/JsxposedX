@@ -108,6 +108,53 @@ std::vector<std::vector<MemoryRegion>> PartitionRegionsForWorkers(
     return buckets;
 }
 
+SearchRuntimeMode ToRuntimeMode(SpecialSearchMode mode) {
+    switch (mode) {
+        case SpecialSearchMode::kXor:
+            return SearchRuntimeMode::kXor;
+        case SpecialSearchMode::kAuto:
+            return SearchRuntimeMode::kAuto;
+        case SpecialSearchMode::kNone:
+            return SearchRuntimeMode::kStandard;
+    }
+    return SearchRuntimeMode::kStandard;
+}
+
+SearchValueType ResolveSessionType(const SearchValue& value, SpecialSearchMode mode) {
+    switch (mode) {
+        case SpecialSearchMode::kXor:
+            return SearchValueType::kI32;
+        case SpecialSearchMode::kAuto:
+            return SearchValueType::kBytes;
+        case SpecialSearchMode::kNone:
+            return value.type;
+    }
+    return value.type;
+}
+
+bool CanContinueWithRequestMode(SearchRuntimeMode session_mode,
+                                SearchRuntimeMode request_mode) {
+    if (session_mode == request_mode) {
+        return true;
+    }
+    return session_mode == SearchRuntimeMode::kAuto &&
+           request_mode == SearchRuntimeMode::kStandard;
+}
+
+std::vector<SearchResultEntry> FilterResultsByMatchedType(
+    const std::vector<SearchResultEntry>& results,
+    SearchValueType type) {
+    std::vector<SearchResultEntry> filtered;
+    filtered.reserve(results.size());
+    for (const SearchResultEntry& entry : results) {
+        if (entry.matched_type != type) {
+            continue;
+        }
+        filtered.push_back(entry);
+    }
+    return filtered;
+}
+
 }  // namespace
 
 MemoryToolEngine& MemoryToolEngine::Instance() {
@@ -208,15 +255,51 @@ void MemoryToolEngine::FirstScan(int pid,
     }
 
     std::vector<uint8_t> pattern;
+    std::vector<SearchPatternVariant> auto_variants;
+    uint32_t xor_target_value = 0;
     std::string error;
-    if (!BuildSearchPattern(value, &pattern, &error)) {
-        throw std::runtime_error(error.empty() ? "Invalid search value." : error);
+    std::string current_display_value;
+    const SpecialSearchMode special_mode = ResolveSpecialSearchMode(value);
+    switch (special_mode) {
+        case SpecialSearchMode::kXor:
+            if (!ParseXorTargetValue(value, &xor_target_value, &current_display_value, &error)) {
+                throw std::runtime_error(error.empty() ? "Invalid XOR search value." : error);
+            }
+            break;
+        case SpecialSearchMode::kAuto: {
+            AutoSearchPlan auto_plan;
+            if (!BuildAutoSearchPlan(value, &auto_plan, &error)) {
+                throw std::runtime_error(error.empty() ? "Invalid AUTO search value." : error);
+            }
+            auto_variants = std::move(auto_plan.variants);
+            current_display_value = std::move(auto_plan.display_value);
+            break;
+        }
+        case SpecialSearchMode::kNone:
+            if (!BuildSearchPattern(value, &pattern, &error)) {
+                throw std::runtime_error(error.empty() ? "Invalid search value." : error);
+            }
+            current_display_value = FormatDisplayValue(value.type,
+                                                       pattern,
+                                                       value.little_endian,
+                                                       ResolveBytesDisplayEncoding(value));
+            break;
     }
 
-    const SearchValueType value_type = value.type;
+    const SearchRuntimeMode runtime_mode = ToRuntimeMode(special_mode);
+    const SearchValueType session_type = ResolveSessionType(value, special_mode);
     const bool little_endian = value.little_endian;
     const BytesDisplayEncoding bytes_display_encoding =
         ResolveBytesDisplayEncoding(value);
+    const size_t session_value_size = runtime_mode == SearchRuntimeMode::kXor
+                                          ? sizeof(uint32_t)
+                                          : runtime_mode == SearchRuntimeMode::kAuto
+                                              ? 0
+                                              : pattern.size();
+    std::vector<uint8_t> current_value_bytes;
+    if (runtime_mode == SearchRuntimeMode::kStandard) {
+        current_value_bytes = pattern;
+    }
     const uint64_t generation = [this, pid]() {
         std::lock_guard<std::mutex> lock(mutex_);
         session_.Clear();
@@ -227,9 +310,15 @@ void MemoryToolEngine::FirstScan(int pid,
                  generation,
                  pid,
                  pattern = std::move(pattern),
-                 value_type,
+                 auto_variants = std::move(auto_variants),
+                 xor_target_value,
+                 runtime_mode,
+                 session_type,
                  little_endian,
                  bytes_display_encoding,
+                 session_value_size,
+                 current_display_value = std::move(current_display_value),
+                 current_value_bytes = std::move(current_value_bytes),
                  range_section_keys,
                  scan_all_readable_regions]() {
         try {
@@ -292,6 +381,7 @@ void MemoryToolEngine::FirstScan(int pid,
                 }
 
                 workers.emplace_back([&pattern,
+                                      &auto_variants,
                                       &region_buckets,
                                       &worker_results,
                                       &processed_region_count,
@@ -301,28 +391,52 @@ void MemoryToolEngine::FirstScan(int pid,
                                       &should_stop,
                                       index,
                                       pid,
-                                      value_type]() {
+                                      xor_target_value,
+                                      runtime_mode,
+                                      little_endian,
+                                      session_type]() {
                     ProcessMemoryReader reader(pid);
                     SearchScanProgress local_progress;
-                    worker_results[index] = ::memory_tool::FirstScan(
-                        &reader,
-                        region_buckets[index],
-                        pattern,
-                        value_type,
-                        [&](const SearchScanProgress& progress) {
-                            if (should_stop.load()) {
-                                return false;
-                            }
+                    const auto on_progress = [&](const SearchScanProgress& progress) {
+                        if (should_stop.load()) {
+                            return false;
+                        }
 
-                            processed_region_count.fetch_add(progress.processed_region_count -
-                                                             local_progress.processed_region_count);
-                            processed_byte_count.fetch_add(progress.processed_byte_count -
-                                                           local_progress.processed_byte_count);
-                            aggregated_result_count.fetch_add(progress.result_count -
-                                                              local_progress.result_count);
-                            local_progress = progress;
-                            return report_progress();
-                        });
+                        processed_region_count.fetch_add(progress.processed_region_count -
+                                                         local_progress.processed_region_count);
+                        processed_byte_count.fetch_add(progress.processed_byte_count -
+                                                       local_progress.processed_byte_count);
+                        aggregated_result_count.fetch_add(progress.result_count -
+                                                          local_progress.result_count);
+                        local_progress = progress;
+                        return report_progress();
+                    };
+
+                    switch (runtime_mode) {
+                        case SearchRuntimeMode::kXor:
+                            worker_results[index] = ::memory_tool::FirstScanXor(
+                                &reader,
+                                region_buckets[index],
+                                xor_target_value,
+                                little_endian,
+                                on_progress);
+                            return;
+                        case SearchRuntimeMode::kAuto:
+                            worker_results[index] = ::memory_tool::FirstScanMultiType(
+                                &reader,
+                                region_buckets[index],
+                                auto_variants,
+                                on_progress);
+                            return;
+                        case SearchRuntimeMode::kStandard:
+                            worker_results[index] = ::memory_tool::FirstScan(
+                                &reader,
+                                region_buckets[index],
+                                pattern,
+                                session_type,
+                                on_progress);
+                            return;
+                    }
                 });
             }
 
@@ -350,14 +464,14 @@ void MemoryToolEngine::FirstScan(int pid,
             SearchSession next_session;
             next_session.has_active_session = true;
             next_session.pid = pid;
-            next_session.type = value_type;
+            next_session.type = session_type;
+            next_session.mode = runtime_mode;
             next_session.exact_mode = true;
             next_session.little_endian = little_endian;
             next_session.bytes_display_encoding = bytes_display_encoding;
-            next_session.value_size = pattern.size();
-            next_session.current_value_bytes = pattern;
-            next_session.current_display_value = FormatDisplayValue(
-                value_type, pattern, little_endian, bytes_display_encoding);
+            next_session.value_size = session_value_size;
+            next_session.current_value_bytes = current_value_bytes;
+            next_session.current_display_value = current_display_value;
             next_session.regions = std::move(regions);
             next_session.results = std::move(results);
             FinishTaskSuccess(generation, std::move(next_session), result_count);
@@ -375,12 +489,40 @@ void MemoryToolEngine::NextScan(const SearchValue& value, SearchMatchMode match_
     }
 
     std::vector<uint8_t> pattern;
+    std::vector<SearchPatternVariant> auto_variants;
+    uint32_t xor_target_value = 0;
     std::string error;
-    if (!BuildSearchPattern(value, &pattern, &error)) {
-        throw std::runtime_error(error.empty() ? "Invalid search value." : error);
+    std::string current_display_value;
+    const SpecialSearchMode special_mode = ResolveSpecialSearchMode(value);
+    switch (special_mode) {
+        case SpecialSearchMode::kXor:
+            if (!ParseXorTargetValue(value, &xor_target_value, &current_display_value, &error)) {
+                throw std::runtime_error(error.empty() ? "Invalid XOR search value." : error);
+            }
+            break;
+        case SpecialSearchMode::kAuto: {
+            AutoSearchPlan auto_plan;
+            if (!BuildAutoSearchPlan(value, &auto_plan, &error)) {
+                throw std::runtime_error(error.empty() ? "Invalid AUTO search value." : error);
+            }
+            auto_variants = std::move(auto_plan.variants);
+            current_display_value = std::move(auto_plan.display_value);
+            break;
+        }
+        case SpecialSearchMode::kNone:
+            if (!BuildSearchPattern(value, &pattern, &error)) {
+                throw std::runtime_error(error.empty() ? "Invalid search value." : error);
+            }
+            current_display_value = FormatDisplayValue(value.type,
+                                                       pattern,
+                                                       value.little_endian,
+                                                       ResolveBytesDisplayEncoding(value));
+            break;
     }
 
     SearchSession session_snapshot;
+    const SearchRuntimeMode runtime_mode = ToRuntimeMode(special_mode);
+    const SearchValueType session_type = ResolveSessionType(value, special_mode);
     const uint64_t generation = [this, &session_snapshot, &value]() {
         std::lock_guard<std::mutex> lock(mutex_);
         EnsureTaskNotRunningLocked();
@@ -389,7 +531,13 @@ void MemoryToolEngine::NextScan(const SearchValue& value, SearchMatchMode match_
             session_.Clear();
             throw std::runtime_error("Search session target process is no longer available.");
         }
-        if (value.type != session_.type) {
+        const SearchRuntimeMode request_mode = ToRuntimeMode(ResolveSpecialSearchMode(value));
+        if (!CanContinueWithRequestMode(session_.mode, request_mode)) {
+            throw std::runtime_error("Search value type does not match the active session.");
+        }
+        if (session_.mode == SearchRuntimeMode::kStandard &&
+            request_mode == SearchRuntimeMode::kStandard &&
+            value.type != session_.type) {
             throw std::runtime_error("Search value type does not match the active session.");
         }
         session_snapshot = session_;
@@ -399,34 +547,80 @@ void MemoryToolEngine::NextScan(const SearchValue& value, SearchMatchMode match_
     const bool little_endian = value.little_endian;
     const BytesDisplayEncoding bytes_display_encoding =
         ResolveBytesDisplayEncoding(value);
+    const size_t session_value_size = runtime_mode == SearchRuntimeMode::kXor
+                                          ? sizeof(uint32_t)
+                                          : runtime_mode == SearchRuntimeMode::kAuto
+                                              ? 0
+                                              : pattern.size();
+    std::vector<uint8_t> current_value_bytes;
+    if (runtime_mode == SearchRuntimeMode::kStandard) {
+        current_value_bytes = pattern;
+    }
 
     std::thread([this,
                  generation,
                  session_snapshot = std::move(session_snapshot),
                  pattern = std::move(pattern),
+                 auto_variants = std::move(auto_variants),
+                 xor_target_value,
+                 runtime_mode,
+                 session_type,
                  little_endian,
-                 bytes_display_encoding]() mutable {
+                 bytes_display_encoding,
+                 session_value_size,
+                 current_display_value = std::move(current_display_value),
+                 current_value_bytes = std::move(current_value_bytes)]() mutable {
         try {
             ProcessMemoryReader reader(session_snapshot.pid);
-            std::vector<SearchResultEntry> results = ::memory_tool::NextScan(
-                &reader,
-                session_snapshot.results,
-                pattern,
-                [this, generation](const SearchScanProgress& progress) {
-                    return UpdateTaskProgress(generation, progress);
-                });
+            const bool isAutoSessionToTypedScan =
+                session_snapshot.mode == SearchRuntimeMode::kAuto &&
+                runtime_mode == SearchRuntimeMode::kStandard;
+            const std::vector<SearchResultEntry> next_scan_source_results =
+                isAutoSessionToTypedScan
+                    ? FilterResultsByMatchedType(session_snapshot.results, session_type)
+                    : session_snapshot.results;
+
+            std::vector<SearchResultEntry> results;
+            switch (runtime_mode) {
+                case SearchRuntimeMode::kXor:
+                    results = ::memory_tool::NextScanXor(
+                        &reader,
+                        next_scan_source_results,
+                        xor_target_value,
+                        little_endian,
+                        [this, generation](const SearchScanProgress& progress) {
+                            return UpdateTaskProgress(generation, progress);
+                        });
+                    break;
+                case SearchRuntimeMode::kAuto:
+                    results = ::memory_tool::NextScanMultiType(
+                        &reader,
+                        next_scan_source_results,
+                        auto_variants,
+                        [this, generation](const SearchScanProgress& progress) {
+                            return UpdateTaskProgress(generation, progress);
+                        });
+                    break;
+                case SearchRuntimeMode::kStandard:
+                    results = ::memory_tool::NextScan(
+                        &reader,
+                        next_scan_source_results,
+                        pattern,
+                        [this, generation](const SearchScanProgress& progress) {
+                            return UpdateTaskProgress(generation, progress);
+                        });
+                    break;
+            }
 
             const size_t result_count = results.size();
             session_snapshot.results = std::move(results);
-            session_snapshot.value_size = pattern.size();
+            session_snapshot.type = session_type;
+            session_snapshot.mode = runtime_mode;
+            session_snapshot.value_size = session_value_size;
             session_snapshot.little_endian = little_endian;
             session_snapshot.bytes_display_encoding = bytes_display_encoding;
-            session_snapshot.current_value_bytes = pattern;
-            session_snapshot.current_display_value = FormatDisplayValue(
-                session_snapshot.type,
-                pattern,
-                little_endian,
-                bytes_display_encoding);
+            session_snapshot.current_value_bytes = current_value_bytes;
+            session_snapshot.current_display_value = current_display_value;
             FinishTaskSuccess(generation, std::move(session_snapshot), result_count);
         } catch (const std::exception& exception) {
             FinishTaskFailure(generation, exception.what());
@@ -490,8 +684,11 @@ SearchResultView MemoryToolEngine::BuildSearchResultViewLocked(const SearchResul
     } else {
         view.region_type_key = "other";
     }
-    view.type = session_.type;
-    view.raw_bytes = session_.current_value_bytes;
+    view.type = entry.matched_type;
+    const size_t byte_length = view.type == SearchValueType::kBytes
+                                   ? session_.value_size
+                                   : ResolveValueByteLength(view.type, session_.value_size);
+    view.raw_bytes.assign(byte_length, 0);
     view.display_value = session_.current_display_value;
     return view;
 }

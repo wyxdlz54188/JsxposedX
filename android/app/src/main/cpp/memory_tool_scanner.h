@@ -23,16 +23,45 @@ struct SearchScanProgress {
 
 using SearchProgressCallback = std::function<bool(const SearchScanProgress&)>;
 
+struct SearchPatternVariant {
+    SearchValueType type = SearchValueType::kI32;
+    std::vector<uint8_t> pattern;
+};
+
 std::vector<SearchResultEntry> FirstScan(ProcessMemoryReader* reader,
                                          const std::vector<MemoryRegion>& regions,
                                          const std::vector<uint8_t>& pattern,
                                          SearchValueType type,
                                          const SearchProgressCallback& progress_callback);
 
+std::vector<SearchResultEntry> FirstScanMultiType(
+    ProcessMemoryReader* reader,
+    const std::vector<MemoryRegion>& regions,
+    const std::vector<SearchPatternVariant>& variants,
+    const SearchProgressCallback& progress_callback);
+
+std::vector<SearchResultEntry> FirstScanXor(ProcessMemoryReader* reader,
+                                            const std::vector<MemoryRegion>& regions,
+                                            uint32_t target_value,
+                                            bool little_endian,
+                                            const SearchProgressCallback& progress_callback);
+
 std::vector<SearchResultEntry> NextScan(ProcessMemoryReader* reader,
                                         const std::vector<SearchResultEntry>& previous_results,
                                         const std::vector<uint8_t>& pattern,
                                         const SearchProgressCallback& progress_callback);
+
+std::vector<SearchResultEntry> NextScanMultiType(
+    ProcessMemoryReader* reader,
+    const std::vector<SearchResultEntry>& previous_results,
+    const std::vector<SearchPatternVariant>& variants,
+    const SearchProgressCallback& progress_callback);
+
+std::vector<SearchResultEntry> NextScanXor(ProcessMemoryReader* reader,
+                                           const std::vector<SearchResultEntry>& previous_results,
+                                           uint32_t target_value,
+                                           bool little_endian,
+                                           const SearchProgressCallback& progress_callback);
 
 }  // namespace memory_tool
 

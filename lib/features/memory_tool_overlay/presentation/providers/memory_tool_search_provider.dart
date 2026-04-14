@@ -269,7 +269,7 @@ class MemoryToolSearchForm extends _$MemoryToolSearchForm {
     }
 
     final validationError = _validateValue(
-      type: state.nativeSearchValueType,
+      option: state.effectiveValueTypeOption,
       rawValue: state.value,
     );
     if (validationError != null) {
@@ -301,7 +301,7 @@ class MemoryToolSearchForm extends _$MemoryToolSearchForm {
     }
 
     final validationError = _validateValue(
-      type: state.nativeSearchValueType,
+      option: state.effectiveValueTypeOption,
       rawValue: state.value,
     );
     if (validationError != null) {
@@ -336,7 +336,7 @@ class MemoryToolSearchForm extends _$MemoryToolSearchForm {
   }
 
   MemoryToolSearchValidationError? _validateValue({
-    required SearchValueType? type,
+    required MemorySearchValueTypeOptionEnum option,
     required String rawValue,
   }) {
     final trimmedValue = rawValue.trim();
@@ -344,28 +344,31 @@ class MemoryToolSearchForm extends _$MemoryToolSearchForm {
       return MemoryToolSearchValidationError.valueRequired;
     }
 
-    if (type == null) {
-      return MemoryToolSearchValidationError.unsupportedType;
-    }
-
-    if (state.isBytesType && _parseBytes(trimmedValue) == null) {
+    if (option == MemorySearchValueTypeOptionEnum.bytes &&
+        _parseBytes(trimmedValue) == null) {
       return MemoryToolSearchValidationError.invalidBytes;
     }
 
-    switch (type) {
-      case SearchValueType.i8:
-      case SearchValueType.i16:
-      case SearchValueType.i32:
-      case SearchValueType.i64:
-        return _validateIntegerValue(type: type, rawValue: trimmedValue);
-      case SearchValueType.f32:
-      case SearchValueType.f64:
+    switch (option) {
+      case MemorySearchValueTypeOptionEnum.i8:
+        return _validateIntegerValue(type: SearchValueType.i8, rawValue: trimmedValue);
+      case MemorySearchValueTypeOptionEnum.i16:
+        return _validateIntegerValue(type: SearchValueType.i16, rawValue: trimmedValue);
+      case MemorySearchValueTypeOptionEnum.i32:
+        return _validateIntegerValue(type: SearchValueType.i32, rawValue: trimmedValue);
+      case MemorySearchValueTypeOptionEnum.i64:
+        return _validateIntegerValue(type: SearchValueType.i64, rawValue: trimmedValue);
+      case MemorySearchValueTypeOptionEnum.xor:
+        return _validateXorValue(trimmedValue);
+      case MemorySearchValueTypeOptionEnum.f32:
+      case MemorySearchValueTypeOptionEnum.f64:
         return _validateDecimalValue(trimmedValue);
-      case SearchValueType.bytes:
+      case MemorySearchValueTypeOptionEnum.auto:
+        return _validateAutoValue(trimmedValue);
+      case MemorySearchValueTypeOptionEnum.bytes:
+      case MemorySearchValueTypeOptionEnum.text:
         return null;
     }
-
-    return null;
   }
 
   MemoryToolSearchValidationError? _validateIntegerValue({
@@ -405,28 +408,64 @@ class MemoryToolSearchForm extends _$MemoryToolSearchForm {
     return null;
   }
 
+  MemoryToolSearchValidationError? _validateAutoValue(String rawValue) {
+    if (rawValue.contains(RegExp(r'[.eE]'))) {
+      return _validateDecimalValue(rawValue);
+    }
+
+    final parsedValue = BigInt.tryParse(rawValue);
+    if (parsedValue == null) {
+      return MemoryToolSearchValidationError.invalidInteger;
+    }
+
+    final min = BigInt.parse('-9223372036854775808');
+    final max = BigInt.parse('9223372036854775807');
+    if (parsedValue < min || parsedValue > max) {
+      return MemoryToolSearchValidationError.integerOutOfRange;
+    }
+    return null;
+  }
+
+  MemoryToolSearchValidationError? _validateXorValue(String rawValue) {
+    final parsedValue = BigInt.tryParse(rawValue);
+    if (parsedValue == null) {
+      return MemoryToolSearchValidationError.invalidInteger;
+    }
+
+    final min = BigInt.zero;
+    final max = BigInt.from(4294967295);
+    if (parsedValue < min || parsedValue > max) {
+      return MemoryToolSearchValidationError.integerOutOfRange;
+    }
+    return null;
+  }
+
   SearchValue _buildSearchValue() {
     final trimmedValue = state.value.trim();
-    final nativeType = state.nativeSearchValueType!;
+    final requestType = state.requestSearchValueType;
     final bytesValue = state.isTextType
         ? Uint8List.fromList(
             state.usesUtf16LeTextEncoding
                 ? _encodeUtf16Le(trimmedValue)
                 : utf8.encode(trimmedValue),
           )
-        : nativeType == SearchValueType.bytes
+        : requestType == SearchValueType.bytes && !state.isAutoType
         ? _parseBytes(trimmedValue)
         : null;
     final textValue = state.isTextType
         ? state.usesUtf16LeTextEncoding
               ? '__jsx_text_utf16le__:$trimmedValue'
               : '__jsx_text_utf8__:$trimmedValue'
-        : nativeType == SearchValueType.bytes
+        : state.isXorType
+        ? '__jsx_xor__:$trimmedValue'
+        : state.isAutoType
+        ? '__jsx_auto__:$trimmedValue'
+        : requestType == SearchValueType.bytes
         ? null
         : trimmedValue;
 
     return SearchValue(
-      type: nativeType,
+      type: requestType,
       textValue: textValue,
       bytesValue: bytesValue,
       littleEndian: state.isLittleEndian,

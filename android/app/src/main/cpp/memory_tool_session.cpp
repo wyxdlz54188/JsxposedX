@@ -6,6 +6,7 @@ void SearchSession::Clear() {
     has_active_session = false;
     pid = 0;
     type = SearchValueType::kI32;
+    mode = SearchRuntimeMode::kStandard;
     exact_mode = true;
     little_endian = true;
     bytes_display_encoding = BytesDisplayEncoding::kHex;

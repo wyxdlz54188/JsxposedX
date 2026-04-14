@@ -23,11 +23,18 @@ extension MemorySearchValueTypeOptionEnumX on MemorySearchValueTypeOptionEnum {
       MemorySearchValueTypeOptionEnum.f32 => SearchValueType.f32,
       MemorySearchValueTypeOptionEnum.f64 => SearchValueType.f64,
       MemorySearchValueTypeOptionEnum.bytes => SearchValueType.bytes,
-      MemorySearchValueTypeOptionEnum.xor => null,
+      MemorySearchValueTypeOptionEnum.xor => SearchValueType.i32,
       MemorySearchValueTypeOptionEnum.auto => null,
       MemorySearchValueTypeOptionEnum.text => SearchValueType.bytes,
     };
   }
 
-  bool get isImplemented => nativeType != null;
+  SearchValueType get requestType {
+    return switch (this) {
+      MemorySearchValueTypeOptionEnum.auto => SearchValueType.bytes,
+      _ => nativeType!,
+    };
+  }
+
+  bool get isImplemented => true;
 }
