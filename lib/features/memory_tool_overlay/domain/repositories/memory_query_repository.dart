@@ -7,4 +7,24 @@ abstract class MemoryQueryRepository {
     required int offset,
     required int limit,
   });
+
+  Future<List<MemoryRegion>> getMemoryRegions({
+    required int pid,
+    required int offset,
+    required int limit,
+    required bool readableOnly,
+    required bool includeAnonymous,
+    required bool includeFileBacked,
+  });
+
+  Future<SearchSessionState> getSearchSessionState();
+
+  Future<List<SearchResult>> getSearchResults({
+    required int offset,
+    required int limit,
+  });
+
+  Future<List<MemoryValuePreview>> readMemoryValues({
+    required List<MemoryReadRequest> requests,
+  });
 }

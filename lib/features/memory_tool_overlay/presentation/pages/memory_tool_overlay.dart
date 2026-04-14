@@ -1,7 +1,6 @@
 import 'package:JsxposedX/common/widgets/overlay_window/overlay_window.dart';
 import 'package:JsxposedX/core/extensions/context_extensions.dart';
 import 'package:JsxposedX/features/memory_tool_overlay/presentation/providers/memory_query_provider.dart';
-import 'package:JsxposedX/features/memory_tool_overlay/presentation/widgets/memory_tool_overlay_l10n.dart';
 import 'package:JsxposedX/features/memory_tool_overlay/presentation/widgets/process_avatar.dart';
 import 'package:JsxposedX/features/memory_tool_overlay/presentation/widgets/process_picker_dialog.dart';
 import 'package:JsxposedX/features/memory_tool_overlay/presentation/widgets/selected_process_panel.dart';

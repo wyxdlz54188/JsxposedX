@@ -30,6 +30,8 @@ class MemoryTool(private val context: Context) {
     private val activityManager =
         context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
     private val iconCache = MemoryToolIconCache(context)
+    private val helperManager = MemoryToolHelperManager(context)
+    private val daemonClient = MemoryToolDaemonClient(helperManager)
 
     fun getPid(packageName: String): Long {
         return MemoryToolJni.getPid(packageName)
@@ -78,6 +80,34 @@ class MemoryTool(private val context: Context) {
                 icon = iconCache.getIconBytes(process.packageName)
             )
         }
+    }
+
+    fun getMemoryRegions(query: MemoryRegionQuery): List<MemoryRegion> {
+        return daemonClient.getMemoryRegions(query)
+    }
+
+    fun getSearchSessionState(): SearchSessionState {
+        return daemonClient.getSearchSessionState()
+    }
+
+    fun getSearchResults(offset: Int, limit: Int): List<SearchResult> {
+        return daemonClient.getSearchResults(offset, limit)
+    }
+
+    fun readMemoryValues(requests: List<MemoryReadRequest>): List<MemoryValuePreview> {
+        return daemonClient.readMemoryValues(requests)
+    }
+
+    fun firstScan(request: FirstScanRequest) {
+        daemonClient.firstScan(request)
+    }
+
+    fun nextScan(request: NextScanRequest) {
+        daemonClient.nextScan(request)
+    }
+
+    fun resetSearchSession() {
+        daemonClient.resetSearchSession()
     }
 
     private fun readProcessEntries(): List<RawProcessEntry> {

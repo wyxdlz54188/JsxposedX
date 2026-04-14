@@ -3,6 +3,7 @@
 
 #include <jni.h>
 
+#include <vector>
 #include <string>
 
 namespace memory_tool::utils {
@@ -18,6 +19,10 @@ std::string WrapCommandWithSu(const std::string& command);
 bool ExecuteCommand(const std::string& command, std::string* output, int* exit_code);
 
 jlong ParsePid(const std::string& output);
+
+std::string HexEncode(const std::vector<uint8_t>& bytes);
+
+std::string JsonEscape(const std::string& value);
 
 }  // namespace memory_tool::utils
 

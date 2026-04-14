@@ -3,6 +3,8 @@
 #include <array>
 #include <cctype>
 #include <cstdio>
+#include <iomanip>
+#include <sstream>
 #include <string>
 
 namespace memory_tool::utils {
@@ -99,6 +101,43 @@ jlong ParsePid(const std::string& output) {
     } catch (...) {
         return 0L;
     }
+}
+
+std::string HexEncode(const std::vector<uint8_t>& bytes) {
+    std::ostringstream stream;
+    for (uint8_t byte : bytes) {
+        stream << std::hex << std::setw(2) << std::setfill('0')
+               << static_cast<int>(byte);
+    }
+    return stream.str();
+}
+
+std::string JsonEscape(const std::string& value) {
+    std::string escaped;
+    escaped.reserve(value.size());
+    for (char ch : value) {
+        switch (ch) {
+            case '\\':
+                escaped += "\\\\";
+                break;
+            case '"':
+                escaped += "\\\"";
+                break;
+            case '\n':
+                escaped += "\\n";
+                break;
+            case '\r':
+                escaped += "\\r";
+                break;
+            case '\t':
+                escaped += "\\t";
+                break;
+            default:
+                escaped += ch;
+                break;
+        }
+    }
+    return escaped;
 }
 
 }  // namespace memory_tool::utils

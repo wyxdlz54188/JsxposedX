@@ -40,4 +40,109 @@ class MemoryToolNativeImpl(val context: Context) : MemoryToolNative {
             }
         }
     }
+
+    override fun getMemoryRegions(query: MemoryRegionQuery, callback: (Result<List<MemoryRegion>>) -> Unit) {
+        scope.launch {
+            try {
+                val result = memoryTool.getMemoryRegions(query)
+                withContext(Dispatchers.Main) {
+                    callback(Result.success(result))
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    callback(Result.failure(e))
+                }
+            }
+        }
+    }
+
+    override fun getSearchSessionState(callback: (Result<SearchSessionState>) -> Unit) {
+        scope.launch {
+            try {
+                val result = memoryTool.getSearchSessionState()
+                withContext(Dispatchers.Main) {
+                    callback(Result.success(result))
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    callback(Result.failure(e))
+                }
+            }
+        }
+    }
+
+    override fun getSearchResults(offset: Long, limit: Long, callback: (Result<List<SearchResult>>) -> Unit) {
+        scope.launch {
+            try {
+                val result = memoryTool.getSearchResults(offset.toInt(), limit.toInt())
+                withContext(Dispatchers.Main) {
+                    callback(Result.success(result))
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    callback(Result.failure(e))
+                }
+            }
+        }
+    }
+
+    override fun readMemoryValues(requests: List<MemoryReadRequest>, callback: (Result<List<MemoryValuePreview>>) -> Unit) {
+        scope.launch {
+            try {
+                val result = memoryTool.readMemoryValues(requests)
+                withContext(Dispatchers.Main) {
+                    callback(Result.success(result))
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    callback(Result.failure(e))
+                }
+            }
+        }
+    }
+
+    override fun firstScan(request: FirstScanRequest, callback: (Result<Unit>) -> Unit) {
+        scope.launch {
+            try {
+                memoryTool.firstScan(request)
+                withContext(Dispatchers.Main) {
+                    callback(Result.success(Unit))
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    callback(Result.failure(e))
+                }
+            }
+        }
+    }
+
+    override fun nextScan(request: NextScanRequest, callback: (Result<Unit>) -> Unit) {
+        scope.launch {
+            try {
+                memoryTool.nextScan(request)
+                withContext(Dispatchers.Main) {
+                    callback(Result.success(Unit))
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    callback(Result.failure(e))
+                }
+            }
+        }
+    }
+
+    override fun resetSearchSession(callback: (Result<Unit>) -> Unit) {
+        scope.launch {
+            try {
+                memoryTool.resetSearchSession()
+                withContext(Dispatchers.Main) {
+                    callback(Result.success(Unit))
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    callback(Result.failure(e))
+                }
+            }
+        }
+    }
 }

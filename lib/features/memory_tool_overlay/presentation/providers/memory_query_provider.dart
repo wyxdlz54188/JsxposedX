@@ -30,6 +30,54 @@ Future<List<ProcessInfo>> getProcessInfo(
       .getProcessInfo(offset: offset, limit: limit);
 }
 
+@riverpod
+Future<List<MemoryRegion>> getMemoryRegions(
+  Ref ref, {
+  required int pid,
+  required int offset,
+  required int limit,
+  bool readableOnly = true,
+  bool includeAnonymous = true,
+  bool includeFileBacked = true,
+}) async {
+  return await ref
+      .watch(memoryQueryRepositoryProvider)
+      .getMemoryRegions(
+        pid: pid,
+        offset: offset,
+        limit: limit,
+        readableOnly: readableOnly,
+        includeAnonymous: includeAnonymous,
+        includeFileBacked: includeFileBacked,
+      );
+}
+
+@riverpod
+Future<SearchSessionState> getSearchSessionState(Ref ref) async {
+  return await ref.watch(memoryQueryRepositoryProvider).getSearchSessionState();
+}
+
+@riverpod
+Future<List<SearchResult>> getSearchResults(
+  Ref ref, {
+  required int offset,
+  required int limit,
+}) async {
+  return await ref
+      .watch(memoryQueryRepositoryProvider)
+      .getSearchResults(offset: offset, limit: limit);
+}
+
+@riverpod
+Future<List<MemoryValuePreview>> readMemoryValues(
+  Ref ref, {
+  required List<MemoryReadRequest> requests,
+}) async {
+  return await ref
+      .watch(memoryQueryRepositoryProvider)
+      .readMemoryValues(requests: requests);
+}
+
 @Riverpod(keepAlive: true)
 class MemoryToolSelectedProcess extends _$MemoryToolSelectedProcess {
   @override

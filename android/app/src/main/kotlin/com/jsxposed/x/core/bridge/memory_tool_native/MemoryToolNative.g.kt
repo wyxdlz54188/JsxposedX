@@ -36,33 +36,34 @@ private object MemoryToolNativePigeonUtils {
   }
   fun deepEquals(a: Any?, b: Any?): Boolean {
     if (a is ByteArray && b is ByteArray) {
-      return a.contentEquals(b)
+        return a.contentEquals(b)
     }
     if (a is IntArray && b is IntArray) {
-      return a.contentEquals(b)
+        return a.contentEquals(b)
     }
     if (a is LongArray && b is LongArray) {
-      return a.contentEquals(b)
+        return a.contentEquals(b)
     }
     if (a is DoubleArray && b is DoubleArray) {
-      return a.contentEquals(b)
+        return a.contentEquals(b)
     }
     if (a is Array<*> && b is Array<*>) {
       return a.size == b.size &&
-          a.indices.all { deepEquals(a[it], b[it]) }
+          a.indices.all{ deepEquals(a[it], b[it]) }
     }
     if (a is List<*> && b is List<*>) {
       return a.size == b.size &&
-          a.indices.all { deepEquals(a[it], b[it]) }
+          a.indices.all{ deepEquals(a[it], b[it]) }
     }
     if (a is Map<*, *> && b is Map<*, *>) {
       return a.size == b.size && a.all {
-        (b as Map<Any?, Any?>).contains(it.key) &&
-            deepEquals(it.value, b[it.key])
+          (b as Map<Any?, Any?>).contains(it.key) &&
+          deepEquals(it.value, b[it.key])
       }
     }
     return a == b
   }
+      
 }
 
 /**
@@ -77,6 +78,33 @@ class FlutterError (
   val details: Any? = null
 ) : Throwable()
 
+enum class SearchValueType(val raw: Int) {
+  I8(0),
+  I16(1),
+  I32(2),
+  I64(3),
+  F32(4),
+  F64(5),
+  BYTES(6);
+
+  companion object {
+    fun ofRaw(raw: Int): SearchValueType? {
+      return values().firstOrNull { it.raw == raw }
+    }
+  }
+}
+
+enum class SearchMatchMode(val raw: Int) {
+  EXACT(0);
+
+  companion object {
+    fun ofRaw(raw: Int): SearchMatchMode? {
+      return values().firstOrNull { it.raw == raw }
+    }
+  }
+}
+
+/** Generated class from Pigeon that represents data sent in messages. */
 data class ProcessInfo (
   val pid: Long,
   val name: String,
@@ -108,8 +136,352 @@ data class ProcessInfo (
     if (this === other) {
       return true
     }
-    return MemoryToolNativePigeonUtils.deepEquals(toList(), other.toList())
+    return MemoryToolNativePigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/** Generated class from Pigeon that represents data sent in messages. */
+data class SearchValue (
+  val type: SearchValueType,
+  val textValue: String? = null,
+  val bytesValue: ByteArray? = null,
+  val littleEndian: Boolean
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): SearchValue {
+      val type = pigeonVar_list[0] as SearchValueType
+      val textValue = pigeonVar_list[1] as String?
+      val bytesValue = pigeonVar_list[2] as ByteArray?
+      val littleEndian = pigeonVar_list[3] as Boolean
+      return SearchValue(type, textValue, bytesValue, littleEndian)
+    }
   }
+  fun toList(): List<Any?> {
+    return listOf(
+      type,
+      textValue,
+      bytesValue,
+      littleEndian,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is SearchValue) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return MemoryToolNativePigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/** Generated class from Pigeon that represents data sent in messages. */
+data class MemoryRegion (
+  val startAddress: Long,
+  val endAddress: Long,
+  val perms: String,
+  val size: Long,
+  val path: String? = null,
+  val isAnonymous: Boolean
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): MemoryRegion {
+      val startAddress = pigeonVar_list[0] as Long
+      val endAddress = pigeonVar_list[1] as Long
+      val perms = pigeonVar_list[2] as String
+      val size = pigeonVar_list[3] as Long
+      val path = pigeonVar_list[4] as String?
+      val isAnonymous = pigeonVar_list[5] as Boolean
+      return MemoryRegion(startAddress, endAddress, perms, size, path, isAnonymous)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      startAddress,
+      endAddress,
+      perms,
+      size,
+      path,
+      isAnonymous,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is MemoryRegion) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return MemoryToolNativePigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/** Generated class from Pigeon that represents data sent in messages. */
+data class MemoryRegionQuery (
+  val pid: Long,
+  val offset: Long,
+  val limit: Long,
+  val readableOnly: Boolean,
+  val includeAnonymous: Boolean,
+  val includeFileBacked: Boolean
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): MemoryRegionQuery {
+      val pid = pigeonVar_list[0] as Long
+      val offset = pigeonVar_list[1] as Long
+      val limit = pigeonVar_list[2] as Long
+      val readableOnly = pigeonVar_list[3] as Boolean
+      val includeAnonymous = pigeonVar_list[4] as Boolean
+      val includeFileBacked = pigeonVar_list[5] as Boolean
+      return MemoryRegionQuery(pid, offset, limit, readableOnly, includeAnonymous, includeFileBacked)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      pid,
+      offset,
+      limit,
+      readableOnly,
+      includeAnonymous,
+      includeFileBacked,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is MemoryRegionQuery) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return MemoryToolNativePigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/** Generated class from Pigeon that represents data sent in messages. */
+data class FirstScanRequest (
+  val pid: Long,
+  val value: SearchValue,
+  val matchMode: SearchMatchMode,
+  val scanAllReadableRegions: Boolean
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): FirstScanRequest {
+      val pid = pigeonVar_list[0] as Long
+      val value = pigeonVar_list[1] as SearchValue
+      val matchMode = pigeonVar_list[2] as SearchMatchMode
+      val scanAllReadableRegions = pigeonVar_list[3] as Boolean
+      return FirstScanRequest(pid, value, matchMode, scanAllReadableRegions)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      pid,
+      value,
+      matchMode,
+      scanAllReadableRegions,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is FirstScanRequest) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return MemoryToolNativePigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/** Generated class from Pigeon that represents data sent in messages. */
+data class NextScanRequest (
+  val value: SearchValue,
+  val matchMode: SearchMatchMode
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): NextScanRequest {
+      val value = pigeonVar_list[0] as SearchValue
+      val matchMode = pigeonVar_list[1] as SearchMatchMode
+      return NextScanRequest(value, matchMode)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      value,
+      matchMode,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is NextScanRequest) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return MemoryToolNativePigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/** Generated class from Pigeon that represents data sent in messages. */
+data class SearchResult (
+  val address: Long,
+  val regionStart: Long,
+  val type: SearchValueType,
+  val rawBytes: ByteArray,
+  val displayValue: String
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): SearchResult {
+      val address = pigeonVar_list[0] as Long
+      val regionStart = pigeonVar_list[1] as Long
+      val type = pigeonVar_list[2] as SearchValueType
+      val rawBytes = pigeonVar_list[3] as ByteArray
+      val displayValue = pigeonVar_list[4] as String
+      return SearchResult(address, regionStart, type, rawBytes, displayValue)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      address,
+      regionStart,
+      type,
+      rawBytes,
+      displayValue,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is SearchResult) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return MemoryToolNativePigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/** Generated class from Pigeon that represents data sent in messages. */
+data class MemoryReadRequest (
+  val address: Long,
+  val type: SearchValueType,
+  val length: Long
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): MemoryReadRequest {
+      val address = pigeonVar_list[0] as Long
+      val type = pigeonVar_list[1] as SearchValueType
+      val length = pigeonVar_list[2] as Long
+      return MemoryReadRequest(address, type, length)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      address,
+      type,
+      length,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is MemoryReadRequest) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return MemoryToolNativePigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/** Generated class from Pigeon that represents data sent in messages. */
+data class MemoryValuePreview (
+  val address: Long,
+  val type: SearchValueType,
+  val rawBytes: ByteArray,
+  val displayValue: String
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): MemoryValuePreview {
+      val address = pigeonVar_list[0] as Long
+      val type = pigeonVar_list[1] as SearchValueType
+      val rawBytes = pigeonVar_list[2] as ByteArray
+      val displayValue = pigeonVar_list[3] as String
+      return MemoryValuePreview(address, type, rawBytes, displayValue)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      address,
+      type,
+      rawBytes,
+      displayValue,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is MemoryValuePreview) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return MemoryToolNativePigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/** Generated class from Pigeon that represents data sent in messages. */
+data class SearchSessionState (
+  val hasActiveSession: Boolean,
+  val pid: Long,
+  val type: SearchValueType,
+  val regionCount: Long,
+  val resultCount: Long,
+  val exactMode: Boolean
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): SearchSessionState {
+      val hasActiveSession = pigeonVar_list[0] as Boolean
+      val pid = pigeonVar_list[1] as Long
+      val type = pigeonVar_list[2] as SearchValueType
+      val regionCount = pigeonVar_list[3] as Long
+      val resultCount = pigeonVar_list[4] as Long
+      val exactMode = pigeonVar_list[5] as Boolean
+      return SearchSessionState(hasActiveSession, pid, type, regionCount, resultCount, exactMode)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      hasActiveSession,
+      pid,
+      type,
+      regionCount,
+      resultCount,
+      exactMode,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is SearchSessionState) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return MemoryToolNativePigeonUtils.deepEquals(toList(), other.toList())  }
 
   override fun hashCode(): Int = toList().hashCode()
 }
@@ -117,8 +489,63 @@ private open class MemoryToolNativePigeonCodec : StandardMessageCodec() {
   override fun readValueOfType(type: Byte, buffer: ByteBuffer): Any? {
     return when (type) {
       129.toByte() -> {
+        return (readValue(buffer) as Long?)?.let {
+          SearchValueType.ofRaw(it.toInt())
+        }
+      }
+      130.toByte() -> {
+        return (readValue(buffer) as Long?)?.let {
+          SearchMatchMode.ofRaw(it.toInt())
+        }
+      }
+      131.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
           ProcessInfo.fromList(it)
+        }
+      }
+      132.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          SearchValue.fromList(it)
+        }
+      }
+      133.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          MemoryRegion.fromList(it)
+        }
+      }
+      134.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          MemoryRegionQuery.fromList(it)
+        }
+      }
+      135.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          FirstScanRequest.fromList(it)
+        }
+      }
+      136.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          NextScanRequest.fromList(it)
+        }
+      }
+      137.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          SearchResult.fromList(it)
+        }
+      }
+      138.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          MemoryReadRequest.fromList(it)
+        }
+      }
+      139.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          MemoryValuePreview.fromList(it)
+        }
+      }
+      140.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          SearchSessionState.fromList(it)
         }
       }
       else -> super.readValueOfType(type, buffer)
@@ -126,8 +553,52 @@ private open class MemoryToolNativePigeonCodec : StandardMessageCodec() {
   }
   override fun writeValue(stream: ByteArrayOutputStream, value: Any?)   {
     when (value) {
-      is ProcessInfo -> {
+      is SearchValueType -> {
         stream.write(129)
+        writeValue(stream, value.raw.toLong())
+      }
+      is SearchMatchMode -> {
+        stream.write(130)
+        writeValue(stream, value.raw.toLong())
+      }
+      is ProcessInfo -> {
+        stream.write(131)
+        writeValue(stream, value.toList())
+      }
+      is SearchValue -> {
+        stream.write(132)
+        writeValue(stream, value.toList())
+      }
+      is MemoryRegion -> {
+        stream.write(133)
+        writeValue(stream, value.toList())
+      }
+      is MemoryRegionQuery -> {
+        stream.write(134)
+        writeValue(stream, value.toList())
+      }
+      is FirstScanRequest -> {
+        stream.write(135)
+        writeValue(stream, value.toList())
+      }
+      is NextScanRequest -> {
+        stream.write(136)
+        writeValue(stream, value.toList())
+      }
+      is SearchResult -> {
+        stream.write(137)
+        writeValue(stream, value.toList())
+      }
+      is MemoryReadRequest -> {
+        stream.write(138)
+        writeValue(stream, value.toList())
+      }
+      is MemoryValuePreview -> {
+        stream.write(139)
+        writeValue(stream, value.toList())
+      }
+      is SearchSessionState -> {
+        stream.write(140)
         writeValue(stream, value.toList())
       }
       else -> super.writeValue(stream, value)
@@ -140,6 +611,13 @@ private open class MemoryToolNativePigeonCodec : StandardMessageCodec() {
 interface MemoryToolNative {
   fun getPid(packageName: String, callback: (Result<Long>) -> Unit)
   fun getProcessInfo(offset: Long, limit: Long, callback: (Result<List<ProcessInfo>>) -> Unit)
+  fun getMemoryRegions(query: MemoryRegionQuery, callback: (Result<List<MemoryRegion>>) -> Unit)
+  fun getSearchSessionState(callback: (Result<SearchSessionState>) -> Unit)
+  fun getSearchResults(offset: Long, limit: Long, callback: (Result<List<SearchResult>>) -> Unit)
+  fun readMemoryValues(requests: List<MemoryReadRequest>, callback: (Result<List<MemoryValuePreview>>) -> Unit)
+  fun firstScan(request: FirstScanRequest, callback: (Result<Unit>) -> Unit)
+  fun nextScan(request: NextScanRequest, callback: (Result<Unit>) -> Unit)
+  fun resetSearchSession(callback: (Result<Unit>) -> Unit)
 
   companion object {
     /** The codec used by MemoryToolNative. */
@@ -184,6 +662,140 @@ interface MemoryToolNative {
               } else {
                 val data = result.getOrNull()
                 reply.reply(MemoryToolNativePigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.JsxposedX.MemoryToolNative.getMemoryRegions$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val queryArg = args[0] as MemoryRegionQuery
+            api.getMemoryRegions(queryArg) { result: Result<List<MemoryRegion>> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(MemoryToolNativePigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(MemoryToolNativePigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.JsxposedX.MemoryToolNative.getSearchSessionState$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { _, reply ->
+            api.getSearchSessionState{ result: Result<SearchSessionState> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(MemoryToolNativePigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(MemoryToolNativePigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.JsxposedX.MemoryToolNative.getSearchResults$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val offsetArg = args[0] as Long
+            val limitArg = args[1] as Long
+            api.getSearchResults(offsetArg, limitArg) { result: Result<List<SearchResult>> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(MemoryToolNativePigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(MemoryToolNativePigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.JsxposedX.MemoryToolNative.readMemoryValues$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val requestsArg = args[0] as List<MemoryReadRequest>
+            api.readMemoryValues(requestsArg) { result: Result<List<MemoryValuePreview>> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(MemoryToolNativePigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(MemoryToolNativePigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.JsxposedX.MemoryToolNative.firstScan$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val requestArg = args[0] as FirstScanRequest
+            api.firstScan(requestArg) { result: Result<Unit> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(MemoryToolNativePigeonUtils.wrapError(error))
+              } else {
+                reply.reply(MemoryToolNativePigeonUtils.wrapResult(null))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.JsxposedX.MemoryToolNative.nextScan$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val requestArg = args[0] as NextScanRequest
+            api.nextScan(requestArg) { result: Result<Unit> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(MemoryToolNativePigeonUtils.wrapError(error))
+              } else {
+                reply.reply(MemoryToolNativePigeonUtils.wrapResult(null))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.JsxposedX.MemoryToolNative.resetSearchSession$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { _, reply ->
+            api.resetSearchSession{ result: Result<Unit> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(MemoryToolNativePigeonUtils.wrapError(error))
+              } else {
+                reply.reply(MemoryToolNativePigeonUtils.wrapResult(null))
               }
             }
           }

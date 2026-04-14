@@ -14,23 +14,33 @@ PlatformException _createConnectionError(String channelName) {
     message: 'Unable to establish connection on channel: "$channelName".',
   );
 }
-
 bool _deepEquals(Object? a, Object? b) {
   if (a is List && b is List) {
     return a.length == b.length &&
-        a.indexed.every(
-          ((int, dynamic) item) => _deepEquals(item.$2, b[item.$1]),
-        );
+        a.indexed
+        .every(((int, dynamic) item) => _deepEquals(item.$2, b[item.$1]));
   }
   if (a is Map && b is Map) {
-    return a.length == b.length &&
-        a.entries.every(
-          (MapEntry<Object?, Object?> entry) =>
-              (b as Map<Object?, Object?>).containsKey(entry.key) &&
-              _deepEquals(entry.value, b[entry.key]),
-        );
+    return a.length == b.length && a.entries.every((MapEntry<Object?, Object?> entry) =>
+        (b as Map<Object?, Object?>).containsKey(entry.key) &&
+        _deepEquals(entry.value, b[entry.key]));
   }
   return a == b;
+}
+
+
+enum SearchValueType {
+  i8,
+  i16,
+  i32,
+  i64,
+  f32,
+  f64,
+  bytes,
+}
+
+enum SearchMatchMode {
+  exact,
 }
 
 class ProcessInfo {
@@ -50,12 +60,16 @@ class ProcessInfo {
   Uint8List? icon;
 
   List<Object?> _toList() {
-    return <Object?>[pid, name, packageName, icon];
+    return <Object?>[
+      pid,
+      name,
+      packageName,
+      icon,
+    ];
   }
 
   Object encode() {
-    return _toList();
-  }
+    return _toList();  }
 
   static ProcessInfo decode(Object result) {
     result as List<Object?>;
@@ -68,6 +82,7 @@ class ProcessInfo {
   }
 
   @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
   bool operator ==(Object other) {
     if (other is! ProcessInfo || other.runtimeType != runtimeType) {
       return false;
@@ -79,8 +94,535 @@ class ProcessInfo {
   }
 
   @override
-  int get hashCode => Object.hashAll(_toList());
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
 }
+
+class SearchValue {
+  SearchValue({
+    required this.type,
+    this.textValue,
+    this.bytesValue,
+    required this.littleEndian,
+  });
+
+  SearchValueType type;
+
+  String? textValue;
+
+  Uint8List? bytesValue;
+
+  bool littleEndian;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      type,
+      textValue,
+      bytesValue,
+      littleEndian,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static SearchValue decode(Object result) {
+    result as List<Object?>;
+    return SearchValue(
+      type: result[0]! as SearchValueType,
+      textValue: result[1] as String?,
+      bytesValue: result[2] as Uint8List?,
+      littleEndian: result[3]! as bool,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! SearchValue || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+class MemoryRegion {
+  MemoryRegion({
+    required this.startAddress,
+    required this.endAddress,
+    required this.perms,
+    required this.size,
+    this.path,
+    required this.isAnonymous,
+  });
+
+  int startAddress;
+
+  int endAddress;
+
+  String perms;
+
+  int size;
+
+  String? path;
+
+  bool isAnonymous;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      startAddress,
+      endAddress,
+      perms,
+      size,
+      path,
+      isAnonymous,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static MemoryRegion decode(Object result) {
+    result as List<Object?>;
+    return MemoryRegion(
+      startAddress: result[0]! as int,
+      endAddress: result[1]! as int,
+      perms: result[2]! as String,
+      size: result[3]! as int,
+      path: result[4] as String?,
+      isAnonymous: result[5]! as bool,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! MemoryRegion || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+class MemoryRegionQuery {
+  MemoryRegionQuery({
+    required this.pid,
+    required this.offset,
+    required this.limit,
+    required this.readableOnly,
+    required this.includeAnonymous,
+    required this.includeFileBacked,
+  });
+
+  int pid;
+
+  int offset;
+
+  int limit;
+
+  bool readableOnly;
+
+  bool includeAnonymous;
+
+  bool includeFileBacked;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      pid,
+      offset,
+      limit,
+      readableOnly,
+      includeAnonymous,
+      includeFileBacked,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static MemoryRegionQuery decode(Object result) {
+    result as List<Object?>;
+    return MemoryRegionQuery(
+      pid: result[0]! as int,
+      offset: result[1]! as int,
+      limit: result[2]! as int,
+      readableOnly: result[3]! as bool,
+      includeAnonymous: result[4]! as bool,
+      includeFileBacked: result[5]! as bool,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! MemoryRegionQuery || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+class FirstScanRequest {
+  FirstScanRequest({
+    required this.pid,
+    required this.value,
+    required this.matchMode,
+    required this.scanAllReadableRegions,
+  });
+
+  int pid;
+
+  SearchValue value;
+
+  SearchMatchMode matchMode;
+
+  bool scanAllReadableRegions;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      pid,
+      value,
+      matchMode,
+      scanAllReadableRegions,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static FirstScanRequest decode(Object result) {
+    result as List<Object?>;
+    return FirstScanRequest(
+      pid: result[0]! as int,
+      value: result[1]! as SearchValue,
+      matchMode: result[2]! as SearchMatchMode,
+      scanAllReadableRegions: result[3]! as bool,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! FirstScanRequest || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+class NextScanRequest {
+  NextScanRequest({
+    required this.value,
+    required this.matchMode,
+  });
+
+  SearchValue value;
+
+  SearchMatchMode matchMode;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      value,
+      matchMode,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static NextScanRequest decode(Object result) {
+    result as List<Object?>;
+    return NextScanRequest(
+      value: result[0]! as SearchValue,
+      matchMode: result[1]! as SearchMatchMode,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! NextScanRequest || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+class SearchResult {
+  SearchResult({
+    required this.address,
+    required this.regionStart,
+    required this.type,
+    required this.rawBytes,
+    required this.displayValue,
+  });
+
+  int address;
+
+  int regionStart;
+
+  SearchValueType type;
+
+  Uint8List rawBytes;
+
+  String displayValue;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      address,
+      regionStart,
+      type,
+      rawBytes,
+      displayValue,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static SearchResult decode(Object result) {
+    result as List<Object?>;
+    return SearchResult(
+      address: result[0]! as int,
+      regionStart: result[1]! as int,
+      type: result[2]! as SearchValueType,
+      rawBytes: result[3]! as Uint8List,
+      displayValue: result[4]! as String,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! SearchResult || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+class MemoryReadRequest {
+  MemoryReadRequest({
+    required this.address,
+    required this.type,
+    required this.length,
+  });
+
+  int address;
+
+  SearchValueType type;
+
+  int length;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      address,
+      type,
+      length,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static MemoryReadRequest decode(Object result) {
+    result as List<Object?>;
+    return MemoryReadRequest(
+      address: result[0]! as int,
+      type: result[1]! as SearchValueType,
+      length: result[2]! as int,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! MemoryReadRequest || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+class MemoryValuePreview {
+  MemoryValuePreview({
+    required this.address,
+    required this.type,
+    required this.rawBytes,
+    required this.displayValue,
+  });
+
+  int address;
+
+  SearchValueType type;
+
+  Uint8List rawBytes;
+
+  String displayValue;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      address,
+      type,
+      rawBytes,
+      displayValue,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static MemoryValuePreview decode(Object result) {
+    result as List<Object?>;
+    return MemoryValuePreview(
+      address: result[0]! as int,
+      type: result[1]! as SearchValueType,
+      rawBytes: result[2]! as Uint8List,
+      displayValue: result[3]! as String,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! MemoryValuePreview || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+class SearchSessionState {
+  SearchSessionState({
+    required this.hasActiveSession,
+    required this.pid,
+    required this.type,
+    required this.regionCount,
+    required this.resultCount,
+    required this.exactMode,
+  });
+
+  bool hasActiveSession;
+
+  int pid;
+
+  SearchValueType type;
+
+  int regionCount;
+
+  int resultCount;
+
+  bool exactMode;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      hasActiveSession,
+      pid,
+      type,
+      regionCount,
+      resultCount,
+      exactMode,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static SearchSessionState decode(Object result) {
+    result as List<Object?>;
+    return SearchSessionState(
+      hasActiveSession: result[0]! as bool,
+      pid: result[1]! as int,
+      type: result[2]! as SearchValueType,
+      regionCount: result[3]! as int,
+      resultCount: result[4]! as int,
+      exactMode: result[5]! as bool,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! SearchSessionState || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
 
 class _PigeonCodec extends StandardMessageCodec {
   const _PigeonCodec();
@@ -89,8 +631,41 @@ class _PigeonCodec extends StandardMessageCodec {
     if (value is int) {
       buffer.putUint8(4);
       buffer.putInt64(value);
-    } else if (value is ProcessInfo) {
+    }    else if (value is SearchValueType) {
       buffer.putUint8(129);
+      writeValue(buffer, value.index);
+    }    else if (value is SearchMatchMode) {
+      buffer.putUint8(130);
+      writeValue(buffer, value.index);
+    }    else if (value is ProcessInfo) {
+      buffer.putUint8(131);
+      writeValue(buffer, value.encode());
+    }    else if (value is SearchValue) {
+      buffer.putUint8(132);
+      writeValue(buffer, value.encode());
+    }    else if (value is MemoryRegion) {
+      buffer.putUint8(133);
+      writeValue(buffer, value.encode());
+    }    else if (value is MemoryRegionQuery) {
+      buffer.putUint8(134);
+      writeValue(buffer, value.encode());
+    }    else if (value is FirstScanRequest) {
+      buffer.putUint8(135);
+      writeValue(buffer, value.encode());
+    }    else if (value is NextScanRequest) {
+      buffer.putUint8(136);
+      writeValue(buffer, value.encode());
+    }    else if (value is SearchResult) {
+      buffer.putUint8(137);
+      writeValue(buffer, value.encode());
+    }    else if (value is MemoryReadRequest) {
+      buffer.putUint8(138);
+      writeValue(buffer, value.encode());
+    }    else if (value is MemoryValuePreview) {
+      buffer.putUint8(139);
+      writeValue(buffer, value.encode());
+    }    else if (value is SearchSessionState) {
+      buffer.putUint8(140);
       writeValue(buffer, value.encode());
     } else {
       super.writeValue(buffer, value);
@@ -100,8 +675,32 @@ class _PigeonCodec extends StandardMessageCodec {
   @override
   Object? readValueOfType(int type, ReadBuffer buffer) {
     switch (type) {
-      case 129:
+      case 129: 
+        final int? value = readValue(buffer) as int?;
+        return value == null ? null : SearchValueType.values[value];
+      case 130: 
+        final int? value = readValue(buffer) as int?;
+        return value == null ? null : SearchMatchMode.values[value];
+      case 131: 
         return ProcessInfo.decode(readValue(buffer)!);
+      case 132: 
+        return SearchValue.decode(readValue(buffer)!);
+      case 133: 
+        return MemoryRegion.decode(readValue(buffer)!);
+      case 134: 
+        return MemoryRegionQuery.decode(readValue(buffer)!);
+      case 135: 
+        return FirstScanRequest.decode(readValue(buffer)!);
+      case 136: 
+        return NextScanRequest.decode(readValue(buffer)!);
+      case 137: 
+        return SearchResult.decode(readValue(buffer)!);
+      case 138: 
+        return MemoryReadRequest.decode(readValue(buffer)!);
+      case 139: 
+        return MemoryValuePreview.decode(readValue(buffer)!);
+      case 140: 
+        return SearchSessionState.decode(readValue(buffer)!);
       default:
         return super.readValueOfType(type, buffer);
     }
@@ -112,13 +711,9 @@ class MemoryToolNative {
   /// Constructor for [MemoryToolNative].  The [binaryMessenger] named argument is
   /// available for dependency injection.  If it is left null, the default
   /// BinaryMessenger will be used which routes to the host platform.
-  MemoryToolNative({
-    BinaryMessenger? binaryMessenger,
-    String messageChannelSuffix = '',
-  }) : pigeonVar_binaryMessenger = binaryMessenger,
-       pigeonVar_messageChannelSuffix = messageChannelSuffix.isNotEmpty
-           ? '.$messageChannelSuffix'
-           : '';
+  MemoryToolNative({BinaryMessenger? binaryMessenger, String messageChannelSuffix = ''})
+      : pigeonVar_binaryMessenger = binaryMessenger,
+        pigeonVar_messageChannelSuffix = messageChannelSuffix.isNotEmpty ? '.$messageChannelSuffix' : '';
   final BinaryMessenger? pigeonVar_binaryMessenger;
 
   static const MessageCodec<Object?> pigeonChannelCodec = _PigeonCodec();
@@ -126,17 +721,13 @@ class MemoryToolNative {
   final String pigeonVar_messageChannelSuffix;
 
   Future<int> getPid({required String packageName}) async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.JsxposedX.MemoryToolNative.getPid$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel =
-        BasicMessageChannel<Object?>(
-          pigeonVar_channelName,
-          pigeonChannelCodec,
-          binaryMessenger: pigeonVar_binaryMessenger,
-        );
-    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
-      <Object?>[packageName],
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.JsxposedX.MemoryToolNative.getPid$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
     );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[packageName]);
     final List<Object?>? pigeonVar_replyList =
         await pigeonVar_sendFuture as List<Object?>?;
     if (pigeonVar_replyList == null) {
@@ -158,17 +749,13 @@ class MemoryToolNative {
   }
 
   Future<List<ProcessInfo>> getProcessInfo(int offset, int limit) async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.JsxposedX.MemoryToolNative.getProcessInfo$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel =
-        BasicMessageChannel<Object?>(
-          pigeonVar_channelName,
-          pigeonChannelCodec,
-          binaryMessenger: pigeonVar_binaryMessenger,
-        );
-    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
-      <Object?>[offset, limit],
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.JsxposedX.MemoryToolNative.getProcessInfo$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
     );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[offset, limit]);
     final List<Object?>? pigeonVar_replyList =
         await pigeonVar_sendFuture as List<Object?>?;
     if (pigeonVar_replyList == null) {
@@ -186,6 +773,187 @@ class MemoryToolNative {
       );
     } else {
       return (pigeonVar_replyList[0] as List<Object?>?)!.cast<ProcessInfo>();
+    }
+  }
+
+  Future<List<MemoryRegion>> getMemoryRegions(MemoryRegionQuery query) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.JsxposedX.MemoryToolNative.getMemoryRegions$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[query]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else if (pigeonVar_replyList[0] == null) {
+      throw PlatformException(
+        code: 'null-error',
+        message: 'Host platform returned null value for non-null return value.',
+      );
+    } else {
+      return (pigeonVar_replyList[0] as List<Object?>?)!.cast<MemoryRegion>();
+    }
+  }
+
+  Future<SearchSessionState> getSearchSessionState() async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.JsxposedX.MemoryToolNative.getSearchSessionState$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(null);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else if (pigeonVar_replyList[0] == null) {
+      throw PlatformException(
+        code: 'null-error',
+        message: 'Host platform returned null value for non-null return value.',
+      );
+    } else {
+      return (pigeonVar_replyList[0] as SearchSessionState?)!;
+    }
+  }
+
+  Future<List<SearchResult>> getSearchResults(int offset, int limit) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.JsxposedX.MemoryToolNative.getSearchResults$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[offset, limit]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else if (pigeonVar_replyList[0] == null) {
+      throw PlatformException(
+        code: 'null-error',
+        message: 'Host platform returned null value for non-null return value.',
+      );
+    } else {
+      return (pigeonVar_replyList[0] as List<Object?>?)!.cast<SearchResult>();
+    }
+  }
+
+  Future<List<MemoryValuePreview>> readMemoryValues(List<MemoryReadRequest> requests) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.JsxposedX.MemoryToolNative.readMemoryValues$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[requests]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else if (pigeonVar_replyList[0] == null) {
+      throw PlatformException(
+        code: 'null-error',
+        message: 'Host platform returned null value for non-null return value.',
+      );
+    } else {
+      return (pigeonVar_replyList[0] as List<Object?>?)!.cast<MemoryValuePreview>();
+    }
+  }
+
+  Future<void> firstScan(FirstScanRequest request) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.JsxposedX.MemoryToolNative.firstScan$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[request]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else {
+      return;
+    }
+  }
+
+  Future<void> nextScan(NextScanRequest request) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.JsxposedX.MemoryToolNative.nextScan$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[request]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else {
+      return;
+    }
+  }
+
+  Future<void> resetSearchSession() async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.JsxposedX.MemoryToolNative.resetSearchSession$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(null);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else {
+      return;
     }
   }
 }

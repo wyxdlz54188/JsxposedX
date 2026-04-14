@@ -210,6 +210,346 @@ final class GetProcessInfoFamily extends $Family
   String toString() => r'getProcessInfoProvider';
 }
 
+@ProviderFor(getMemoryRegions)
+const getMemoryRegionsProvider = GetMemoryRegionsFamily._();
+
+final class GetMemoryRegionsProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<MemoryRegion>>,
+          List<MemoryRegion>,
+          FutureOr<List<MemoryRegion>>
+        >
+    with
+        $FutureModifier<List<MemoryRegion>>,
+        $FutureProvider<List<MemoryRegion>> {
+  const GetMemoryRegionsProvider._({
+    required GetMemoryRegionsFamily super.from,
+    required ({
+      int pid,
+      int offset,
+      int limit,
+      bool readableOnly,
+      bool includeAnonymous,
+      bool includeFileBacked,
+    })
+    super.argument,
+  }) : super(
+         retry: null,
+         name: r'getMemoryRegionsProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$getMemoryRegionsHash();
+
+  @override
+  String toString() {
+    return r'getMemoryRegionsProvider'
+        ''
+        '$argument';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<List<MemoryRegion>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<MemoryRegion>> create(Ref ref) {
+    final argument =
+        this.argument
+            as ({
+              int pid,
+              int offset,
+              int limit,
+              bool readableOnly,
+              bool includeAnonymous,
+              bool includeFileBacked,
+            });
+    return getMemoryRegions(
+      ref,
+      pid: argument.pid,
+      offset: argument.offset,
+      limit: argument.limit,
+      readableOnly: argument.readableOnly,
+      includeAnonymous: argument.includeAnonymous,
+      includeFileBacked: argument.includeFileBacked,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is GetMemoryRegionsProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$getMemoryRegionsHash() => r'f2b7dfa7be335fe46d7f40af3a3035df4f10d08b';
+
+final class GetMemoryRegionsFamily extends $Family
+    with
+        $FunctionalFamilyOverride<
+          FutureOr<List<MemoryRegion>>,
+          ({
+            int pid,
+            int offset,
+            int limit,
+            bool readableOnly,
+            bool includeAnonymous,
+            bool includeFileBacked,
+          })
+        > {
+  const GetMemoryRegionsFamily._()
+    : super(
+        retry: null,
+        name: r'getMemoryRegionsProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  GetMemoryRegionsProvider call({
+    required int pid,
+    required int offset,
+    required int limit,
+    bool readableOnly = true,
+    bool includeAnonymous = true,
+    bool includeFileBacked = true,
+  }) => GetMemoryRegionsProvider._(
+    argument: (
+      pid: pid,
+      offset: offset,
+      limit: limit,
+      readableOnly: readableOnly,
+      includeAnonymous: includeAnonymous,
+      includeFileBacked: includeFileBacked,
+    ),
+    from: this,
+  );
+
+  @override
+  String toString() => r'getMemoryRegionsProvider';
+}
+
+@ProviderFor(getSearchSessionState)
+const getSearchSessionStateProvider = GetSearchSessionStateProvider._();
+
+final class GetSearchSessionStateProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<SearchSessionState>,
+          SearchSessionState,
+          FutureOr<SearchSessionState>
+        >
+    with
+        $FutureModifier<SearchSessionState>,
+        $FutureProvider<SearchSessionState> {
+  const GetSearchSessionStateProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'getSearchSessionStateProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$getSearchSessionStateHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<SearchSessionState> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<SearchSessionState> create(Ref ref) {
+    return getSearchSessionState(ref);
+  }
+}
+
+String _$getSearchSessionStateHash() =>
+    r'36d80a242c90e296647922a54e58b9229c2af0bf';
+
+@ProviderFor(getSearchResults)
+const getSearchResultsProvider = GetSearchResultsFamily._();
+
+final class GetSearchResultsProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<SearchResult>>,
+          List<SearchResult>,
+          FutureOr<List<SearchResult>>
+        >
+    with
+        $FutureModifier<List<SearchResult>>,
+        $FutureProvider<List<SearchResult>> {
+  const GetSearchResultsProvider._({
+    required GetSearchResultsFamily super.from,
+    required ({int offset, int limit}) super.argument,
+  }) : super(
+         retry: null,
+         name: r'getSearchResultsProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$getSearchResultsHash();
+
+  @override
+  String toString() {
+    return r'getSearchResultsProvider'
+        ''
+        '$argument';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<List<SearchResult>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<SearchResult>> create(Ref ref) {
+    final argument = this.argument as ({int offset, int limit});
+    return getSearchResults(
+      ref,
+      offset: argument.offset,
+      limit: argument.limit,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is GetSearchResultsProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$getSearchResultsHash() => r'5e908c706a1c67d9c94410ec4357c436a20d7be4';
+
+final class GetSearchResultsFamily extends $Family
+    with
+        $FunctionalFamilyOverride<
+          FutureOr<List<SearchResult>>,
+          ({int offset, int limit})
+        > {
+  const GetSearchResultsFamily._()
+    : super(
+        retry: null,
+        name: r'getSearchResultsProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  GetSearchResultsProvider call({required int offset, required int limit}) =>
+      GetSearchResultsProvider._(
+        argument: (offset: offset, limit: limit),
+        from: this,
+      );
+
+  @override
+  String toString() => r'getSearchResultsProvider';
+}
+
+@ProviderFor(readMemoryValues)
+const readMemoryValuesProvider = ReadMemoryValuesFamily._();
+
+final class ReadMemoryValuesProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<MemoryValuePreview>>,
+          List<MemoryValuePreview>,
+          FutureOr<List<MemoryValuePreview>>
+        >
+    with
+        $FutureModifier<List<MemoryValuePreview>>,
+        $FutureProvider<List<MemoryValuePreview>> {
+  const ReadMemoryValuesProvider._({
+    required ReadMemoryValuesFamily super.from,
+    required List<MemoryReadRequest> super.argument,
+  }) : super(
+         retry: null,
+         name: r'readMemoryValuesProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$readMemoryValuesHash();
+
+  @override
+  String toString() {
+    return r'readMemoryValuesProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<List<MemoryValuePreview>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<MemoryValuePreview>> create(Ref ref) {
+    final argument = this.argument as List<MemoryReadRequest>;
+    return readMemoryValues(ref, requests: argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is ReadMemoryValuesProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$readMemoryValuesHash() => r'bf385112a080cc1e2503c9625fd5bc49319f2523';
+
+final class ReadMemoryValuesFamily extends $Family
+    with
+        $FunctionalFamilyOverride<
+          FutureOr<List<MemoryValuePreview>>,
+          List<MemoryReadRequest>
+        > {
+  const ReadMemoryValuesFamily._()
+    : super(
+        retry: null,
+        name: r'readMemoryValuesProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  ReadMemoryValuesProvider call({required List<MemoryReadRequest> requests}) =>
+      ReadMemoryValuesProvider._(argument: requests, from: this);
+
+  @override
+  String toString() => r'readMemoryValuesProvider';
+}
+
 @ProviderFor(MemoryToolSelectedProcess)
 const memoryToolSelectedProcessProvider = MemoryToolSelectedProcessProvider._();
 
