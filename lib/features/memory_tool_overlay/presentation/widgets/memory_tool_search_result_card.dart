@@ -375,48 +375,66 @@ class _MemoryToolSearchResultTile extends StatelessWidget {
               ),
               SizedBox(width: 4.r),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: <Widget>[
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: <Widget>[
-                        Expanded(
-                          child: Text(
-                            _formatHex(result.address),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: context.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: 10.r),
-                        Flexible(
-                          child: Text(
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: <Widget>[
+                          Text(
                             result.displayValue,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.right,
                             style: context.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.w900,
                               color: context.colorScheme.primary,
                             ),
                           ),
+                          SizedBox(height: 2.r),
+                          Text(
+                            _typeLabel(result.type),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: context.textTheme.labelMedium?.copyWith(
+                              color: context.colorScheme.onSurface.withValues(
+                                alpha: 0.62,
+                              ),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(width: 10.r),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        Text(
+                          _formatHex(result.address),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.right,
+                          style: context.textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        SizedBox(height: 2.r),
+                        Text(
+                          _formatHex(result.regionStart),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.right,
+                          style: context.textTheme.labelMedium?.copyWith(
+                            color: context.colorScheme.onSurface.withValues(
+                              alpha: 0.62,
+                            ),
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ],
-                    ),
-                    SizedBox(height: 2.r),
-                    Text(
-                      '${_typeLabel(result.type)}   ${_formatHex(result.regionStart)}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: context.textTheme.labelMedium?.copyWith(
-                        color: context.colorScheme.onSurface.withValues(
-                          alpha: 0.62,
-                        ),
-                        fontWeight: FontWeight.w600,
-                      ),
                     ),
                   ],
                 ),
