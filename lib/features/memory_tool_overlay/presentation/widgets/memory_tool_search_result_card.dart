@@ -40,6 +40,10 @@ class MemoryToolSearchResultCard extends HookConsumerWidget {
       data: (results) => results,
       orElse: () => const <SearchResult>[],
     );
+    final resultCount = sessionStateAsync.maybeWhen(
+      data: (state) => state.resultCount,
+      orElse: () => displayedResults.length,
+    );
     final visibleResults = displayedResults
         .take(selectionState.selectionLimit)
         .toList(growable: false);
@@ -125,6 +129,8 @@ class MemoryToolSearchResultCard extends HookConsumerWidget {
                             },
                           ),
                         ),
+                        SizedBox(height: 6.r),
+                        _MemoryToolResultCountText(count: resultCount),
                       ],
                     );
                   },
@@ -177,6 +183,8 @@ class MemoryToolSearchResultCard extends HookConsumerWidget {
                               },
                             ),
                           ),
+                          SizedBox(height: 6.r),
+                          _MemoryToolResultCountText(count: resultCount),
                         ],
                       );
                     }
@@ -199,6 +207,28 @@ class MemoryToolSearchResultCard extends HookConsumerWidget {
             ),
           ),
       ],
+    );
+  }
+}
+
+class _MemoryToolResultCountText extends StatelessWidget {
+  const _MemoryToolResultCountText({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Text(
+        '${context.l10n.memoryToolSessionResultCount}: $count',
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: context.textTheme.bodySmall?.copyWith(
+          color: context.colorScheme.onSurface.withValues(alpha: 0.64),
+          fontWeight: FontWeight.w600,
+        ),
+      ),
     );
   }
 }
