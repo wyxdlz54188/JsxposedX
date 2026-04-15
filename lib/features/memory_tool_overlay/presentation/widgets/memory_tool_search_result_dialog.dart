@@ -27,14 +27,13 @@ class MemoryToolSearchResultDialog extends StatelessWidget {
       maxHeightLandscape: 300.r,
       cardBorderRadius: 18.r,
       childBuilder: (context, viewport, layout) {
-        return Padding(
+        return SingleChildScrollView(
           padding: EdgeInsets.all(14.r),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Text(result.toString()),
-              SizedBox(height: 14.r),
+
               Align(
                 alignment: Alignment.centerRight,
                 child: FilledButton(
