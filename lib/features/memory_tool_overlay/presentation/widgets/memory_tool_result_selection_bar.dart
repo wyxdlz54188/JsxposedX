@@ -6,17 +6,25 @@ class MemoryToolResultSelectionBar extends StatelessWidget {
   const MemoryToolResultSelectionBar({
     super.key,
     required this.hasVisibleResults,
+    required this.hasSelection,
+    required this.canRestorePrevious,
     required this.onSelectAll,
     required this.onInvert,
     required this.onClear,
+    required this.onOpenBatchEdit,
+    required this.onRestorePrevious,
     required this.onOpenSettings,
     required this.onOpenSearch,
   });
 
   final bool hasVisibleResults;
+  final bool hasSelection;
+  final bool canRestorePrevious;
   final VoidCallback onSelectAll;
   final VoidCallback onInvert;
   final VoidCallback onClear;
+  final VoidCallback onOpenBatchEdit;
+  final VoidCallback onRestorePrevious;
   final VoidCallback onOpenSettings;
   final VoidCallback onOpenSearch;
 
@@ -64,6 +72,16 @@ class MemoryToolResultSelectionBar extends StatelessWidget {
                     _MemoryToolResultSelectionAction(
                       icon: Icons.layers_clear_rounded,
                       onTap: hasVisibleResults ? onClear : null,
+                    ),
+                    const _MemoryToolResultSelectionDivider(),
+                    _MemoryToolResultSelectionAction(
+                      icon: Icons.edit_rounded,
+                      onTap: hasSelection ? onOpenBatchEdit : null,
+                    ),
+                    const _MemoryToolResultSelectionDivider(),
+                    _MemoryToolResultSelectionAction(
+                      icon: Icons.undo_rounded,
+                      onTap: canRestorePrevious ? onRestorePrevious : null,
                     ),
                     const _MemoryToolResultSelectionDivider(),
                     _MemoryToolResultSelectionAction(

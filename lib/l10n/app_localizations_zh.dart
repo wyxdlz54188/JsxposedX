@@ -2000,6 +2000,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get memoryToolResultValue => '值';
 
   @override
+  String get memoryToolResultPreviousValue => '上次值';
+
+  @override
   String get memoryToolResultDetailTitle => '结果详情';
 
   @override

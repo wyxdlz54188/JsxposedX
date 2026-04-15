@@ -955,6 +955,7 @@
   "memoryToolResultRegion": "Region",
   "memoryToolResultType": "Type",
   "memoryToolResultValue": "Value",
+  "memoryToolResultPreviousValue": "Previous",
   "memoryToolResultDetailTitle": "Result Details",
   "memoryToolResultDetailActionsLabel": "Quick Actions",
   "memoryToolResultDetailActionEdit": "Edit",

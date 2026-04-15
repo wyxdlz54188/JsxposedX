@@ -1,7 +1,9 @@
 import 'package:JsxposedX/common/widgets/loading.dart';
 import 'package:JsxposedX/common/widgets/ref_error.dart';
 import 'package:JsxposedX/core/extensions/context_extensions.dart';
+import 'package:JsxposedX/features/memory_tool_overlay/presentation/providers/memory_action_provider.dart';
 import 'package:JsxposedX/features/memory_tool_overlay/presentation/providers/memory_query_provider.dart';
+import 'package:JsxposedX/features/memory_tool_overlay/presentation/widgets/memory_tool_batch_edit_dialog.dart';
 import 'package:JsxposedX/features/memory_tool_overlay/presentation/providers/memory_tool_search_provider.dart';
 import 'package:JsxposedX/features/memory_tool_overlay/presentation/widgets/memory_tool_result_selection_dialog.dart';
 import 'package:JsxposedX/features/memory_tool_overlay/presentation/widgets/memory_tool_result_selection_bar.dart';
@@ -36,8 +38,10 @@ class MemoryToolSearchResultCard extends HookConsumerWidget {
     final livePreviewsAsync = ref.watch(
       currentSearchResultLivePreviewsProvider,
     );
+    final valueHistoryState = ref.watch(memoryValueHistoryProvider);
     final selectedPid = ref.watch(memoryToolSelectedProcessProvider)?.pid;
     final isSettingsVisible = useState(false);
+    final isBatchEditVisible = useState(false);
 
     final resultsAsync = hasMatchingSession
         ? ref.watch(currentSearchResultsProvider)
@@ -56,6 +60,16 @@ class MemoryToolSearchResultCard extends HookConsumerWidget {
     final visibleResults = displayedResults
         .take(selectionState.selectionLimit)
         .toList(growable: false);
+    final selectedResults = visibleResults
+        .where((result) => selectionState.contains(result.address))
+        .toList(growable: false);
+    final canRestorePrevious = selectionState.selectedAddresses.any(
+      valueHistoryState.containsKey,
+    );
+    final previousValueByAddress = <int, String>{
+      for (final entry in valueHistoryState.entries)
+        entry.key: entry.value.displayValue,
+    };
     final listStorageKey = PageStorageKey<String>(
       'memory_tool_search_results_${selectedPid ?? 0}',
     );
@@ -68,6 +82,8 @@ class MemoryToolSearchResultCard extends HookConsumerWidget {
             children: <Widget>[
               MemoryToolResultSelectionBar(
                 hasVisibleResults: visibleResults.isNotEmpty,
+                hasSelection: selectedResults.isNotEmpty,
+                canRestorePrevious: canRestorePrevious,
                 onSelectAll: () {
                   selectionNotifier.selectVisible(visibleResults);
                 },
@@ -75,6 +91,29 @@ class MemoryToolSearchResultCard extends HookConsumerWidget {
                   selectionNotifier.invertVisible(visibleResults);
                 },
                 onClear: selectionNotifier.clear,
+                onOpenBatchEdit: () {
+                  isBatchEditVisible.value = true;
+                },
+                onRestorePrevious: () async {
+                  try {
+                    final sessionState = await ref.read(
+                      getSearchSessionStateProvider.future,
+                    );
+                    await ref
+                        .read(memoryValueActionProvider.notifier)
+                        .restorePreviousValues(
+                          addresses: selectionState.selectedAddresses,
+                          littleEndian: sessionState.littleEndian,
+                        );
+                  } catch (error) {
+                    if (!context.mounted) {
+                      return;
+                    }
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text(error.toString())));
+                  }
+                },
                 onOpenSettings: () {
                   isSettingsVisible.value = true;
                 },
@@ -98,6 +137,7 @@ class MemoryToolSearchResultCard extends HookConsumerWidget {
                             selectionState: selectionState,
                             selectionNotifier: selectionNotifier,
                             livePreviewsAsync: livePreviewsAsync,
+                            previousValueByAddress: previousValueByAddress,
                           );
                         },
                         error: (error, _) =>
@@ -110,6 +150,7 @@ class MemoryToolSearchResultCard extends HookConsumerWidget {
                               selectionState: selectionState,
                               selectionNotifier: selectionNotifier,
                               livePreviewsAsync: livePreviewsAsync,
+                              previousValueByAddress: previousValueByAddress,
                             );
                           }
 
@@ -137,6 +178,16 @@ class MemoryToolSearchResultCard extends HookConsumerWidget {
               onConfirm: (value) {
                 selectionNotifier.updateSelectionLimit(value);
                 isSettingsVisible.value = false;
+              },
+            ),
+          ),
+        if (isBatchEditVisible.value)
+          Positioned.fill(
+            child: MemoryToolBatchEditDialog(
+              results: selectedResults,
+              livePreviewsAsync: livePreviewsAsync,
+              onClose: () {
+                isBatchEditVisible.value = false;
               },
             ),
           ),

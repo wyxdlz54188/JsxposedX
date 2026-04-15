@@ -18,6 +18,7 @@ class MemoryToolSearchResultList extends HookWidget {
     required this.selectionState,
     required this.selectionNotifier,
     required this.livePreviewsAsync,
+    required this.previousValueByAddress,
   });
 
   final PageStorageKey<String> listStorageKey;
@@ -25,6 +26,7 @@ class MemoryToolSearchResultList extends HookWidget {
   final MemoryToolResultSelectionState selectionState;
   final MemoryToolResultSelectionController selectionNotifier;
   final AsyncValue<Map<int, MemoryValuePreview>> livePreviewsAsync;
+  final Map<int, String> previousValueByAddress;
 
   @override
   Widget build(BuildContext context) {
@@ -50,6 +52,7 @@ class MemoryToolSearchResultList extends HookWidget {
             return MemoryToolSearchResultTile(
               result: result,
               displayValue: displayValue,
+              previousDisplayValue: previousValueByAddress[result.address],
               isSelected: selectionState.contains(result.address),
               onToggleSelection: () {
                 selectionNotifier.toggle(result);

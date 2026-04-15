@@ -2040,6 +2040,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get memoryToolResultValue => 'Value';
 
   @override
+  String get memoryToolResultPreviousValue => 'Previous';
+
+  @override
   String get memoryToolResultDetailTitle => 'Result Details';
 
   @override

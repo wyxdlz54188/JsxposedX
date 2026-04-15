@@ -960,6 +960,7 @@
   "memoryToolResultRegion": "区段",
   "memoryToolResultType": "类型",
   "memoryToolResultValue": "值",
+  "memoryToolResultPreviousValue": "上次值",
   "memoryToolResultDetailTitle": "结果详情",
   "memoryToolResultDetailActionsLabel": "快捷操作",
   "memoryToolResultDetailActionEdit": "编辑",

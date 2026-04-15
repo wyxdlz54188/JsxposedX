@@ -3956,6 +3956,12 @@ abstract class AppLocalizations {
   /// **'值'**
   String get memoryToolResultValue;
 
+  /// No description provided for @memoryToolResultPreviousValue.
+  ///
+  /// In zh, this message translates to:
+  /// **'上次值'**
+  String get memoryToolResultPreviousValue;
+
   /// No description provided for @memoryToolResultDetailTitle.
   ///
   /// In zh, this message translates to:
