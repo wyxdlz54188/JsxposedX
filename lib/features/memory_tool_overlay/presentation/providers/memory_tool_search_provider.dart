@@ -239,6 +239,15 @@ class MemoryToolRemovedResultController
     );
   }
 
+  void removeMany(Iterable<int> addresses) {
+    final nextAddresses = <int>{...state.removedAddresses, ...addresses};
+    if (nextAddresses.length == state.removedAddresses.length) {
+      return;
+    }
+
+    state = state.copyWith(removedAddresses: nextAddresses);
+  }
+
   void clear() {
     if (state.removedAddresses.isEmpty) {
       return;

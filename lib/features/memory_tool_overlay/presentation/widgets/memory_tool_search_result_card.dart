@@ -40,6 +40,9 @@ class MemoryToolSearchResultCard extends HookConsumerWidget {
     );
     final valueHistoryState = ref.watch(memoryValueHistoryProvider);
     final removedResultState = ref.watch(memoryToolRemovedResultProvider);
+    final removedResultNotifier = ref.read(
+      memoryToolRemovedResultProvider.notifier,
+    );
     final selectedPid = ref.watch(memoryToolSelectedProcessProvider)?.pid;
     final isSettingsVisible = useState(false);
     final isBatchEditVisible = useState(false);
@@ -98,6 +101,12 @@ class MemoryToolSearchResultCard extends HookConsumerWidget {
                   selectionNotifier.invertVisible(visibleResults);
                 },
                 onClear: selectionNotifier.clear,
+                onDeleteSelected: () {
+                  removedResultNotifier.removeMany(
+                    selectionState.selectedAddresses,
+                  );
+                  selectionNotifier.clear();
+                },
                 onOpenBatchEdit: () {
                   isBatchEditVisible.value = true;
                 },

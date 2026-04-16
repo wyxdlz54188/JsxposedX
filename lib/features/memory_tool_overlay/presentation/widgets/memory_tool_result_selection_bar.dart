@@ -11,6 +11,7 @@ class MemoryToolResultSelectionBar extends StatelessWidget {
     required this.onSelectAll,
     required this.onInvert,
     required this.onClear,
+    required this.onDeleteSelected,
     required this.onOpenBatchEdit,
     required this.onRestorePrevious,
     required this.onOpenSettings,
@@ -23,6 +24,7 @@ class MemoryToolResultSelectionBar extends StatelessWidget {
   final VoidCallback onSelectAll;
   final VoidCallback onInvert;
   final VoidCallback onClear;
+  final VoidCallback onDeleteSelected;
   final VoidCallback onOpenBatchEdit;
   final VoidCallback onRestorePrevious;
   final VoidCallback onOpenSettings;
@@ -72,6 +74,11 @@ class MemoryToolResultSelectionBar extends StatelessWidget {
                     _MemoryToolResultSelectionAction(
                       icon: Icons.layers_clear_rounded,
                       onTap: hasVisibleResults ? onClear : null,
+                    ),
+                    const _MemoryToolResultSelectionDivider(),
+                    _MemoryToolResultSelectionAction(
+                      icon: Icons.delete_sweep_rounded,
+                      onTap: hasSelection ? onDeleteSelected : null,
                     ),
                     const _MemoryToolResultSelectionDivider(),
                     _MemoryToolResultSelectionAction(
