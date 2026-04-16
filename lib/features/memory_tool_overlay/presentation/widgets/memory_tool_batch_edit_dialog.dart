@@ -25,6 +25,7 @@ class MemoryToolBatchEditDialog extends HookConsumerWidget {
     final selectedType = useState<SearchValueType>(
       results.isEmpty ? SearchValueType.i32 : results.first.type,
     );
+    final freezeEnabled = useState<bool>(false);
     final valueController = useTextEditingController();
     final valueActionState = ref.watch(memoryValueActionProvider);
     useListenable(valueController);
@@ -55,6 +56,7 @@ class MemoryToolBatchEditDialog extends HookConsumerWidget {
       };
 
       final requests = <MemoryWriteRequest>[];
+      final freezeRequests = <MemoryFreezeRequest>[];
       final previousPreviews = <MemoryValuePreview>[];
       for (final result in results) {
         final currentPreview = currentPreviewByAddress[result.address];
@@ -63,19 +65,26 @@ class MemoryToolBatchEditDialog extends HookConsumerWidget {
         }
 
         previousPreviews.add(currentPreview);
-        requests.add(
-          MemoryWriteRequest(
-            address: result.address,
-            value: buildMemoryToolWriteValue(
-              type: selectedType.value,
-              input: valueController.text,
-              littleEndian: sessionState.littleEndian,
-              sourceType: currentPreview.type,
-              sourceRawBytes: currentPreview.rawBytes,
-              sourceDisplayValue: currentPreview.displayValue,
-            ),
-          ),
+        final writeValue = buildMemoryToolWriteValue(
+          type: selectedType.value,
+          input: valueController.text,
+          littleEndian: sessionState.littleEndian,
+          sourceType: currentPreview.type,
+          sourceRawBytes: currentPreview.rawBytes,
+          sourceDisplayValue: currentPreview.displayValue,
         );
+        requests.add(
+          MemoryWriteRequest(address: result.address, value: writeValue),
+        );
+        if (freezeEnabled.value) {
+          freezeRequests.add(
+            MemoryFreezeRequest(
+              address: result.address,
+              value: writeValue,
+              enabled: true,
+            ),
+          );
+        }
       }
 
       if (requests.isEmpty) {
@@ -88,6 +97,11 @@ class MemoryToolBatchEditDialog extends HookConsumerWidget {
             requests: requests,
             previousPreviews: previousPreviews,
           );
+      if (freezeRequests.isNotEmpty) {
+        await ref
+            .read(memoryValueActionProvider.notifier)
+            .setMemoryFreezes(requests: freezeRequests);
+      }
 
       if (!context.mounted) {
         return;
@@ -122,6 +136,12 @@ class MemoryToolBatchEditDialog extends HookConsumerWidget {
       },
       valueController: valueController,
       valueHintText: context.l10n.memoryToolFieldValuePlaceholder,
+      isFreezeEnabled: freezeEnabled.value,
+      onFreezeChanged: valueActionState.isLoading
+          ? null
+          : (value) {
+              freezeEnabled.value = value;
+            },
       errorText: valueActionState.error?.toString(),
       canSave: canSave,
       onSave: handleSave,

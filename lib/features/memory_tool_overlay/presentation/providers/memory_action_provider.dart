@@ -168,6 +168,30 @@ class MemoryValueAction extends _$MemoryValueAction {
     }
   }
 
+  Future<void> setMemoryFreezes({
+    required List<MemoryFreezeRequest> requests,
+  }) async {
+    if (requests.isEmpty) {
+      return;
+    }
+
+    state = const AsyncValue.loading();
+    final nextState = await AsyncValue.guard(() async {
+      final repository = ref.read(memoryActionRepositoryProvider);
+      for (final request in requests) {
+        await repository.setMemoryFreeze(request: request);
+      }
+      _invalidateValueQueries();
+    });
+    state = nextState;
+    if (nextState.hasError) {
+      Error.throwWithStackTrace(
+        nextState.error!,
+        nextState.asError!.stackTrace,
+      );
+    }
+  }
+
   Future<void> writeMemoryValues({
     required List<MemoryWriteRequest> requests,
     required List<MemoryValuePreview> previousPreviews,
