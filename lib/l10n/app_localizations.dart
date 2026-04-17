@@ -4112,6 +4112,36 @@ abstract class AppLocalizations {
   /// **'为后续批量写入和筛选后的编辑预留入口。'**
   String get memoryToolResultActionBatchEditHint;
 
+  /// No description provided for @memoryToolBatchEditIncrementUnsupported.
+  ///
+  /// In zh, this message translates to:
+  /// **'递增模式仅支持数值类型'**
+  String get memoryToolBatchEditIncrementUnsupported;
+
+  /// No description provided for @memoryToolBatchEditNoReadableResults.
+  ///
+  /// In zh, this message translates to:
+  /// **'没有可读取的选中结果。'**
+  String get memoryToolBatchEditNoReadableResults;
+
+  /// No description provided for @memoryToolBatchEditIncrementLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'递增'**
+  String get memoryToolBatchEditIncrementLabel;
+
+  /// No description provided for @memoryToolBatchEditStepLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'步长'**
+  String get memoryToolBatchEditStepLabel;
+
+  /// No description provided for @memoryToolBatchEditPreviewLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'预览'**
+  String get memoryToolBatchEditPreviewLabel;
+
   /// No description provided for @memoryToolResultActionSaveToSaved.
   ///
   /// In zh, this message translates to:

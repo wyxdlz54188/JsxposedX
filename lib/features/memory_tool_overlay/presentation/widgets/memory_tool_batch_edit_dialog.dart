@@ -2,6 +2,7 @@ import 'package:JsxposedX/common/widgets/custom_text_field.dart';
 import 'package:JsxposedX/core/extensions/context_extensions.dart';
 import 'package:JsxposedX/features/memory_tool_overlay/presentation/providers/memory_action_provider.dart';
 import 'package:JsxposedX/features/memory_tool_overlay/presentation/providers/memory_query_provider.dart';
+import 'package:JsxposedX/features/memory_tool_overlay/presentation/providers/memory_tool_saved_items_provider.dart';
 import 'package:JsxposedX/features/memory_tool_overlay/presentation/utils/memory_tool_search_result_presenter.dart';
 import 'package:JsxposedX/features/memory_tool_overlay/presentation/widgets/memory_tool_value_editor_dialog.dart';
 import 'package:JsxposedX/generated/memory_tool.g.dart';
@@ -10,23 +11,20 @@ import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+enum MemoryToolBatchEditSavedSyncMode { none, frozenOnly, all }
+
 class MemoryToolBatchEditDialog extends HookConsumerWidget {
   const MemoryToolBatchEditDialog({
     super.key,
     required this.results,
     required this.livePreviewsAsync,
-    this.onSaved,
+    this.savedSyncMode = MemoryToolBatchEditSavedSyncMode.none,
     required this.onClose,
   });
 
   final List<SearchResult> results;
   final AsyncValue<Map<int, MemoryValuePreview>> livePreviewsAsync;
-  final Future<void> Function(
-    List<SearchResult> results,
-    Map<int, MemoryValuePreview> updatedPreviews,
-    bool isFrozen,
-  )?
-  onSaved;
+  final MemoryToolBatchEditSavedSyncMode savedSyncMode;
   final VoidCallback onClose;
 
   @override
@@ -39,6 +37,7 @@ class MemoryToolBatchEditDialog extends HookConsumerWidget {
     final valueController = useTextEditingController();
     final incrementController = useTextEditingController(text: '1');
     final valueActionState = ref.watch(memoryValueActionProvider);
+    final savedItemsNotifier = ref.read(memoryToolSavedItemsProvider.notifier);
     useListenable(valueController);
     useListenable(incrementController);
 
@@ -47,7 +46,7 @@ class MemoryToolBatchEditDialog extends HookConsumerWidget {
     String? localErrorText;
     if (incrementEnabled.value) {
       if (!supportsIncrement) {
-        localErrorText = '增量模式仅支持数值类型';
+        localErrorText = context.l10n.memoryToolBatchEditIncrementUnsupported;
       } else {
         try {
           final sampleCount = results.length < 4 ? results.length : 4;
@@ -144,7 +143,7 @@ class MemoryToolBatchEditDialog extends HookConsumerWidget {
       }
 
       if (requests.isEmpty) {
-        throw StateError('No readable selected results.');
+        throw StateError(context.l10n.memoryToolBatchEditNoReadableResults);
       }
 
       await ref
@@ -158,16 +157,25 @@ class MemoryToolBatchEditDialog extends HookConsumerWidget {
             .read(memoryValueActionProvider.notifier)
             .setMemoryFreezes(requests: freezeRequests);
       }
-      if (onSaved != null) {
+      final selectedPid = ref.read(memoryToolSelectedProcessProvider)?.pid;
+      final shouldSyncSavedItems =
+          selectedPid != null &&
+          savedSyncMode != MemoryToolBatchEditSavedSyncMode.none &&
+          (savedSyncMode == MemoryToolBatchEditSavedSyncMode.all ||
+              freezeEnabled.value);
+      if (shouldSyncSavedItems) {
         final updatedPreviews = await ref
             .read(memoryQueryRepositoryProvider)
             .readMemoryValues(requests: previewRequests);
-        await onSaved!(
-          processedResults,
-          <int, MemoryValuePreview>{
+        savedItemsNotifier.saveMany(
+          pid: selectedPid,
+          results: processedResults,
+          previewsByAddress: <int, MemoryValuePreview>{
             for (final preview in updatedPreviews) preview.address: preview,
           },
-          freezeEnabled.value,
+          frozenAddresses: freezeEnabled.value
+              ? processedResults.map((result) => result.address).toSet()
+              : const <int>{},
         );
       }
 
@@ -237,7 +245,7 @@ class MemoryToolBatchEditDialog extends HookConsumerWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: <Widget>[
                         Text(
-                          '递增',
+                          context.l10n.memoryToolBatchEditIncrementLabel,
                           style: context.textTheme.bodyMedium?.copyWith(
                             fontWeight: FontWeight.w800,
                           ),
@@ -255,7 +263,7 @@ class MemoryToolBatchEditDialog extends HookConsumerWidget {
                     if (incrementEnabled.value) ...<Widget>[
                       const SizedBox(height: 6),
                       Text(
-                        '步长',
+                        context.l10n.memoryToolBatchEditStepLabel,
                         style: context.textTheme.labelMedium?.copyWith(
                           color: context.colorScheme.onSurface.withValues(
                             alpha: 0.62,
@@ -266,13 +274,11 @@ class MemoryToolBatchEditDialog extends HookConsumerWidget {
                       const SizedBox(height: 6),
                       CustomTextField(
                         controller: incrementController,
-                        labelText: '步长',
+                        labelText: context.l10n.memoryToolBatchEditStepLabel,
                         hintText: '1',
                         keyboardType: incrementInputType,
                         inputFormatters: <TextInputFormatter>[
-                          FilteringTextInputFormatter.allow(
-                            RegExp(r'[-0-9.]'),
-                          ),
+                          FilteringTextInputFormatter.allow(RegExp(r'[-0-9.]')),
                         ],
                         fillColor: context.colorScheme.surface.withValues(
                           alpha: 0.4,
@@ -284,7 +290,7 @@ class MemoryToolBatchEditDialog extends HookConsumerWidget {
                       if (previewSamples.isNotEmpty) ...<Widget>[
                         const SizedBox(height: 10),
                         Text(
-                          '预览 ${previewSamples.join(', ')}${results.length > previewSamples.length ? '...' : ''}',
+                          '${context.l10n.memoryToolBatchEditPreviewLabel} ${previewSamples.join(', ')}${results.length > previewSamples.length ? '...' : ''}',
                           style: context.textTheme.bodySmall?.copyWith(
                             color: context.colorScheme.primary,
                             fontWeight: FontWeight.w700,

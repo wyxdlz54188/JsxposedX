@@ -65,7 +65,9 @@ class MemoryToolSavedTab extends HookConsumerWidget {
 
     Future<void> restoreAddresses(List<int> addresses) async {
       try {
-        final sessionState = await ref.read(getSearchSessionStateProvider.future);
+        final sessionState = await ref.read(
+          getSearchSessionStateProvider.future,
+        );
         await ref
             .read(memoryValueActionProvider.notifier)
             .restorePreviousValues(
@@ -80,25 +82,6 @@ class MemoryToolSavedTab extends HookConsumerWidget {
           context,
         ).showSnackBar(SnackBar(content: Text(error.toString())));
       }
-    }
-
-    Future<void> syncSavedItems({
-      required List<SearchResult> results,
-      required Map<int, MemoryValuePreview> previewsByAddress,
-      required bool isFrozen,
-    }) async {
-      if (selectedProcess == null || results.isEmpty) {
-        return;
-      }
-
-      savedItemsNotifier.saveMany(
-        pid: selectedProcess.pid,
-        results: results,
-        previewsByAddress: previewsByAddress,
-        frozenAddresses: isFrozen
-            ? results.map((result) => result.address).toSet()
-            : const <int>{},
-      );
     }
 
     if (selectedProcess == null) {
@@ -265,14 +248,6 @@ class MemoryToolSavedTab extends HookConsumerWidget {
               initialFrozenState:
                   currentFrozenAddresses?.contains(dialog.item.address) ??
                   dialog.item.isFrozen,
-              onSaved: (result, preview, isFrozen) async {
-                savedItemsNotifier.saveOne(
-                  pid: dialog.item.pid,
-                  result: result,
-                  preview: preview,
-                  isFrozen: isFrozen,
-                );
-              },
               onClose: () {
                 activeDialog.value = null;
               },
@@ -285,13 +260,7 @@ class MemoryToolSavedTab extends HookConsumerWidget {
                   .map((item) => item.toSearchResult())
                   .toList(growable: false),
               livePreviewsAsync: livePreviewsAsync,
-              onSaved: (results, updatedPreviews, isFrozen) async {
-                await syncSavedItems(
-                  results: results,
-                  previewsByAddress: updatedPreviews,
-                  isFrozen: isFrozen,
-                );
-              },
+              savedSyncMode: MemoryToolBatchEditSavedSyncMode.all,
               onClose: () {
                 isBatchEditVisible.value = false;
               },

@@ -2123,6 +2123,23 @@ class AppLocalizationsEn extends AppLocalizations {
       'Reserve an entry point for future batch write and filtered edit flows.';
 
   @override
+  String get memoryToolBatchEditIncrementUnsupported =>
+      'Increment mode only supports numeric types.';
+
+  @override
+  String get memoryToolBatchEditNoReadableResults =>
+      'No readable selected results.';
+
+  @override
+  String get memoryToolBatchEditIncrementLabel => 'Increment';
+
+  @override
+  String get memoryToolBatchEditStepLabel => 'Step';
+
+  @override
+  String get memoryToolBatchEditPreviewLabel => 'Preview';
+
+  @override
   String get memoryToolResultActionSaveToSaved => 'Save to Saved';
 
   @override

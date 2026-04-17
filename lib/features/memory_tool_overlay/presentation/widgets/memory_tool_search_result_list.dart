@@ -1,4 +1,7 @@
 import 'package:JsxposedX/core/extensions/context_extensions.dart';
+import 'package:JsxposedX/common/pages/toast.dart';
+import 'package:JsxposedX/features/memory_tool_overlay/presentation/providers/memory_query_provider.dart';
+import 'package:JsxposedX/features/memory_tool_overlay/presentation/providers/memory_tool_saved_items_provider.dart';
 import 'package:JsxposedX/features/memory_tool_overlay/presentation/providers/memory_tool_search_provider.dart';
 import 'package:JsxposedX/features/memory_tool_overlay/presentation/widgets/memory_tool_search_result_action_dialog.dart';
 import 'package:JsxposedX/features/memory_tool_overlay/presentation/states/memory_tool_result_selection_state.dart';
@@ -22,8 +25,6 @@ class MemoryToolSearchResultList extends HookConsumerWidget {
     required this.previousValueByAddress,
     this.processPid,
     this.initialFrozenStateByAddress = const <int, bool>{},
-    this.onSaved,
-    this.onSaveResult,
   });
 
   final PageStorageKey<String> listStorageKey;
@@ -34,13 +35,6 @@ class MemoryToolSearchResultList extends HookConsumerWidget {
   final Map<int, String> previousValueByAddress;
   final int? processPid;
   final Map<int, bool> initialFrozenStateByAddress;
-  final Future<void> Function(
-    SearchResult result,
-    MemoryValuePreview preview,
-    bool isFrozen,
-  )?
-  onSaved;
-  final Future<void> Function(SearchResult result)? onSaveResult;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -51,6 +45,25 @@ class MemoryToolSearchResultList extends HookConsumerWidget {
     final removedResultNotifier = ref.read(
       memoryToolRemovedResultProvider.notifier,
     );
+    final savedItemsNotifier = ref.read(memoryToolSavedItemsProvider.notifier);
+
+    Future<void> saveResultToSaved(SearchResult result) async {
+      final selectedPid = ref.read(memoryToolSelectedProcessProvider)?.pid;
+      if (selectedPid == null) {
+        return;
+      }
+
+      savedItemsNotifier.saveOne(
+        pid: selectedPid,
+        result: result,
+        preview: livePreviewsAsync.asData?.value[result.address],
+        isFrozen: initialFrozenStateByAddress[result.address] ?? false,
+      );
+      await ToastOverlayMessage.show(
+        context.l10n.memoryToolSavedToSavedMessage(1),
+        duration: const Duration(milliseconds: 1200),
+      );
+    }
 
     return Stack(
       children: <Widget>[
@@ -105,7 +118,6 @@ class MemoryToolSearchResultList extends HookConsumerWidget {
               processPid: processPid,
               initialFrozenState:
                   initialFrozenStateByAddress[dialog.result.address],
-              onSaved: onSaved,
               onClose: () {
                 activeResultDialog.value = null;
               },
@@ -119,9 +131,7 @@ class MemoryToolSearchResultList extends HookConsumerWidget {
                   icon: Icons.save_alt_rounded,
                   title: context.l10n.memoryToolResultActionSaveToSaved,
                   onTap: () async {
-                    if (onSaveResult != null) {
-                      await onSaveResult!(dialog.result);
-                    }
+                    await saveResultToSaved(dialog.result);
                     activeResultActionDialog.value = null;
                   },
                 ),

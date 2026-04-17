@@ -2078,6 +2078,21 @@ class AppLocalizationsZh extends AppLocalizations {
   String get memoryToolResultActionBatchEditHint => '为后续批量写入和筛选后的编辑预留入口。';
 
   @override
+  String get memoryToolBatchEditIncrementUnsupported => '递增模式仅支持数值类型';
+
+  @override
+  String get memoryToolBatchEditNoReadableResults => '没有可读取的选中结果。';
+
+  @override
+  String get memoryToolBatchEditIncrementLabel => '递增';
+
+  @override
+  String get memoryToolBatchEditStepLabel => '步长';
+
+  @override
+  String get memoryToolBatchEditPreviewLabel => '预览';
+
+  @override
   String get memoryToolResultActionSaveToSaved => '保存到暂存区';
 
   @override

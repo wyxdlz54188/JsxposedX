@@ -38,7 +38,9 @@ class MemoryToolSearchResultCard extends HookConsumerWidget {
     final selectionNotifier = ref.read(
       memoryToolResultSelectionProvider.notifier,
     );
-    final livePreviewsAsync = ref.watch(currentSearchResultLivePreviewsProvider);
+    final livePreviewsAsync = ref.watch(
+      currentSearchResultLivePreviewsProvider,
+    );
     final valueHistoryState = ref.watch(memoryValueHistoryProvider);
     final removedResultState = ref.watch(memoryToolRemovedResultProvider);
     final removedResultNotifier = ref.read(
@@ -92,7 +94,8 @@ class MemoryToolSearchResultCard extends HookConsumerWidget {
       'memory_tool_search_results_${selectedPid ?? 0}',
     );
     final frozenAddresses = <int>{
-      for (final value in frozenValuesAsync.asData?.value ?? const <FrozenMemoryValue>[])
+      for (final value
+          in frozenValuesAsync.asData?.value ?? const <FrozenMemoryValue>[])
         if (selectedPid != null && value.pid == selectedPid) value.address,
     };
 
@@ -187,8 +190,9 @@ class MemoryToolSearchResultCard extends HookConsumerWidget {
                   ),
                   MemoryToolResultSelectionActionData(
                     icon: Icons.layers_clear_rounded,
-                    onTap:
-                        visibleResults.isEmpty ? null : selectionNotifier.clear,
+                    onTap: visibleResults.isEmpty
+                        ? null
+                        : selectionNotifier.clear,
                   ),
                   MemoryToolResultSelectionActionData(
                     icon: Icons.delete_sweep_rounded,
@@ -285,31 +289,8 @@ class MemoryToolSearchResultCard extends HookConsumerWidget {
                             previousValueByAddress: previousValueByAddress,
                             processPid: selectedPid,
                             initialFrozenStateByAddress: <int, bool>{
-                              for (final address in frozenAddresses) address: true,
-                            },
-                            onSaved: (result, preview, isFrozen) async {
-                              if (selectedPid == null) {
-                                return;
-                              }
-                              savedItemsNotifier.saveOne(
-                                pid: selectedPid,
-                                result: result,
-                                preview: preview,
-                                isFrozen: isFrozen,
-                              );
-                            },
-                            onSaveResult: (result) async {
-                              if (selectedPid == null) {
-                                return;
-                              }
-                              savedItemsNotifier.saveOne(
-                                pid: selectedPid,
-                                result: result,
-                                preview:
-                                    livePreviewsAsync.asData?.value[result.address],
-                                isFrozen: frozenAddresses.contains(result.address),
-                              );
-                              await showSavedToast(1);
+                              for (final address in frozenAddresses)
+                                address: true,
                             },
                           );
                         },
@@ -326,33 +307,8 @@ class MemoryToolSearchResultCard extends HookConsumerWidget {
                               previousValueByAddress: previousValueByAddress,
                               processPid: selectedPid,
                               initialFrozenStateByAddress: <int, bool>{
-                                for (final address in frozenAddresses) address: true,
-                              },
-                              onSaved: (result, preview, isFrozen) async {
-                                if (selectedPid == null) {
-                                  return;
-                                }
-                                savedItemsNotifier.saveOne(
-                                  pid: selectedPid,
-                                  result: result,
-                                  preview: preview,
-                                  isFrozen: isFrozen,
-                                );
-                              },
-                              onSaveResult: (result) async {
-                                if (selectedPid == null) {
-                                  return;
-                                }
-                                savedItemsNotifier.saveOne(
-                                  pid: selectedPid,
-                                  result: result,
-                                  preview:
-                                      livePreviewsAsync.asData?.value[result.address],
-                                  isFrozen: frozenAddresses.contains(
-                                    result.address,
-                                  ),
-                                );
-                                await showSavedToast(1);
+                                for (final address in frozenAddresses)
+                                  address: true,
                               },
                             );
                           }
@@ -389,18 +345,7 @@ class MemoryToolSearchResultCard extends HookConsumerWidget {
             child: MemoryToolBatchEditDialog(
               results: selectedResults,
               livePreviewsAsync: livePreviewsAsync,
-              onSaved: (results, updatedPreviews, isFrozen) async {
-                if (!isFrozen || selectedPid == null) {
-                  return;
-                }
-                await saveResultsToSaved(
-                  results,
-                  previewsByAddress: updatedPreviews,
-                  frozenResultAddresses: results
-                      .map((result) => result.address)
-                      .toSet(),
-                );
-              },
+              savedSyncMode: MemoryToolBatchEditSavedSyncMode.frozenOnly,
               onClose: () {
                 isBatchEditVisible.value = false;
               },
