@@ -1,4 +1,5 @@
 import 'package:JsxposedX/common/widgets/custom_text_field.dart';
+import 'package:JsxposedX/common/widgets/overlay_window/overlay_text_input_context_menu.dart';
 import 'package:JsxposedX/core/extensions/context_extensions.dart';
 import 'package:JsxposedX/features/memory_tool_overlay/presentation/providers/memory_action_provider.dart';
 import 'package:JsxposedX/features/memory_tool_overlay/presentation/providers/memory_query_provider.dart';
@@ -277,6 +278,7 @@ class MemoryToolBatchEditDialog extends HookConsumerWidget {
                         labelText: context.l10n.memoryToolBatchEditStepLabel,
                         hintText: '1',
                         keyboardType: incrementInputType,
+                        contextMenuBuilder: buildOverlayTextInputContextMenu,
                         inputFormatters: <TextInputFormatter>[
                           FilteringTextInputFormatter.allow(RegExp(r'[-0-9.]')),
                         ],

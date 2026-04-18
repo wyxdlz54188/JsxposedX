@@ -1,4 +1,5 @@
 import 'package:JsxposedX/common/widgets/custom_text_field.dart';
+import 'package:JsxposedX/common/widgets/overlay_window/overlay_text_input_context_menu.dart';
 import 'package:JsxposedX/common/widgets/overlay_window/overlay_panel_dialog.dart';
 import 'package:JsxposedX/core/extensions/context_extensions.dart';
 import 'package:JsxposedX/features/memory_tool_overlay/presentation/providers/memory_query_provider.dart';
@@ -109,6 +110,7 @@ class MemoryToolOffsetPreviewDialog extends HookConsumerWidget {
                       controller: offsetController,
                       keyboardType: TextInputType.text,
                       labelText: context.l10n.memoryToolOffsetPreviewOffsetLabel,
+                      contextMenuBuilder: buildOverlayTextInputContextMenu,
                       fillColor: context.colorScheme.surfaceContainerHighest
                           .withValues(alpha: 0.22),
                       focusedBorderColor: context.colorScheme.primary,

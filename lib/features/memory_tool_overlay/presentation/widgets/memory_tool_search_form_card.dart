@@ -1,3 +1,4 @@
+import 'package:JsxposedX/common/widgets/overlay_window/overlay_text_input_context_menu.dart';
 import 'package:JsxposedX/features/memory_tool_overlay/presentation/enums/memory_search_match_mode_enum.dart';
 import 'package:JsxposedX/core/extensions/context_extensions.dart';
 import 'package:JsxposedX/features/memory_tool_overlay/presentation/enums/memory_search_fuzzy_mode_enum.dart';
@@ -305,6 +306,8 @@ class _MemoryToolSearchValueField extends StatelessWidget {
       controller: controller,
       onChanged: onChanged,
       keyboardType: keyboardType,
+      enableInteractiveSelection: true,
+      contextMenuBuilder: buildOverlayTextInputContextMenu,
       inputFormatters: isBytes
           ? <TextInputFormatter>[
               FilteringTextInputFormatter.allow(RegExp(r'[0-9a-fA-FxX ]')),

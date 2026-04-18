@@ -1,3 +1,4 @@
+import 'package:JsxposedX/common/widgets/overlay_window/overlay_text_input_context_menu.dart';
 import 'package:JsxposedX/common/widgets/overlay_window/overlay_panel_dialog.dart';
 import 'package:JsxposedX/core/extensions/context_extensions.dart';
 import 'package:flutter/material.dart';
@@ -64,6 +65,8 @@ class MemoryToolResultSelectionDialog extends HookWidget {
                 controller: controller,
                 keyboardType: TextInputType.number,
                 textInputAction: TextInputAction.done,
+                enableInteractiveSelection: true,
+                contextMenuBuilder: buildOverlayTextInputContextMenu,
                 inputFormatters: <TextInputFormatter>[
                   FilteringTextInputFormatter.digitsOnly,
                 ],
