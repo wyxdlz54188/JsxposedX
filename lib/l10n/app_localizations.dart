@@ -4196,6 +4196,30 @@ abstract class AppLocalizations {
   /// **'跳转到指针目标'**
   String get memoryToolPointerActionJumpToTarget;
 
+  /// No description provided for @memoryToolPointerActionCopyPointerAddress.
+  ///
+  /// In zh, this message translates to:
+  /// **'复制指针地址'**
+  String get memoryToolPointerActionCopyPointerAddress;
+
+  /// No description provided for @memoryToolPointerActionCopyPointedAddress.
+  ///
+  /// In zh, this message translates to:
+  /// **'复制指向地址'**
+  String get memoryToolPointerActionCopyPointedAddress;
+
+  /// No description provided for @memoryToolPointerActionCopyTargetAddress.
+  ///
+  /// In zh, this message translates to:
+  /// **'复制目标地址'**
+  String get memoryToolPointerActionCopyTargetAddress;
+
+  /// No description provided for @memoryToolPointerActionCopyExpression.
+  ///
+  /// In zh, this message translates to:
+  /// **'复制表达式'**
+  String get memoryToolPointerActionCopyExpression;
+
   /// No description provided for @memoryToolPointerOffsetLabel.
   ///
   /// In zh, this message translates to:

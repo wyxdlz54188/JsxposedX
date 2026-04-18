@@ -2163,6 +2163,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get memoryToolPointerActionJumpToTarget => 'Jump to Pointer Target';
 
   @override
+  String get memoryToolPointerActionCopyPointerAddress =>
+      'Copy Pointer Address';
+
+  @override
+  String get memoryToolPointerActionCopyPointedAddress =>
+      'Copy Pointed Address';
+
+  @override
+  String get memoryToolPointerActionCopyTargetAddress => 'Copy Target Address';
+
+  @override
+  String get memoryToolPointerActionCopyExpression => 'Copy Expression';
+
+  @override
   String get memoryToolPointerOffsetLabel => 'Offset';
 
   @override

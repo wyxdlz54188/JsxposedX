@@ -1,14 +1,19 @@
 import 'package:JsxposedX/core/extensions/context_extensions.dart';
+import 'package:JsxposedX/features/memory_tool_overlay/presentation/providers/memory_query_provider.dart';
+import 'package:JsxposedX/features/overlay_window/presentation/providers/overlay_window_host_runtime_provider.dart';
+import 'package:JsxposedX/features/memory_tool_overlay/presentation/utils/memory_tool_region_owner_resolver.dart';
 import 'package:JsxposedX/features/memory_tool_overlay/presentation/utils/memory_tool_search_result_presenter.dart';
 import 'package:JsxposedX/features/memory_tool_overlay/presentation/widgets/memory_tool_result_badge.dart';
 import 'package:JsxposedX/features/memory_tool_overlay/presentation/widgets/memory_tool_search_result_action_dialog.dart';
 import 'package:JsxposedX/generated/memory_tool.g.dart'
     show PointerScanRequest, PointerScanResult;
 import 'package:flutter/material.dart';
+import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-class MemoryToolPointerResultList extends HookWidget {
+class MemoryToolPointerResultList extends HookConsumerWidget {
   const MemoryToolPointerResultList({
     super.key,
     required this.results,
@@ -29,8 +34,14 @@ class MemoryToolPointerResultList extends HookWidget {
   final Future<void> Function(PointerScanResult result) onJumpToTarget;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final activeActionDialog = useState<PointerScanResult?>(null);
+    Future<void> copyText(String value) async {
+      final copied = await FlutterOverlayWindow.setClipboardData(value);
+      ref.read(overlayWindowHostRuntimeProvider.notifier).showToast(
+        copied ? context.l10n.codeCopied : context.l10n.error,
+      );
+    }
 
     return Stack(
       children: <Widget>[
@@ -71,6 +82,52 @@ class MemoryToolPointerResultList extends HookWidget {
                   title: context.l10n.memoryToolPointerActionJumpToTarget,
                   onTap: () async {
                     await onJumpToTarget(result);
+                    activeActionDialog.value = null;
+                  },
+                ),
+                MemoryToolSearchResultActionItemData(
+                  icon: Icons.copy_all_rounded,
+                  title:
+                      '${context.l10n.memoryToolPointerActionCopyPointerAddress}: ${formatMemoryToolSearchResultAddress(result.pointerAddress)}',
+                  onTap: () async {
+                    await copyText(
+                      formatMemoryToolSearchResultAddress(result.pointerAddress),
+                    );
+                    activeActionDialog.value = null;
+                  },
+                ),
+                MemoryToolSearchResultActionItemData(
+                  icon: Icons.my_location_rounded,
+                  title:
+                      '${context.l10n.memoryToolPointerActionCopyPointedAddress}: ${formatMemoryToolSearchResultAddress(result.baseAddress)}',
+                  onTap: () async {
+                    await copyText(
+                      formatMemoryToolSearchResultAddress(result.baseAddress),
+                    );
+                    activeActionDialog.value = null;
+                  },
+                ),
+                MemoryToolSearchResultActionItemData(
+                  icon: Icons.adjust_rounded,
+                  title:
+                      '${context.l10n.memoryToolPointerActionCopyTargetAddress}: ${formatMemoryToolSearchResultAddress(result.targetAddress)}',
+                  onTap: () async {
+                    await copyText(
+                      formatMemoryToolSearchResultAddress(result.targetAddress),
+                    );
+                    activeActionDialog.value = null;
+                  },
+                ),
+                MemoryToolSearchResultActionItemData(
+                  icon: Icons.data_object_rounded,
+                  title: context.l10n.memoryToolPointerActionCopyExpression,
+                  onTap: () async {
+                    final soName = await resolveMemoryToolRegionOwnerSoName(
+                      repository: ref.read(memoryQueryRepositoryProvider),
+                      pid: request.pid,
+                      regionStart: result.regionStart,
+                    );
+                    await copyText(_buildPointerExpression(result, soName: soName));
                     activeActionDialog.value = null;
                   },
                 ),
@@ -229,4 +286,31 @@ class _MemoryToolPointerResultTile extends StatelessWidget {
     }
     return 'Pointed Address';
   }
+}
+
+String _buildPointerExpression(
+  PointerScanResult result, {
+  required String soName,
+}) {
+  final addr = '0x${formatMemoryToolSearchResultAddress(result.pointerAddress)}';
+  final offset = '0x${result.offset.toRadixString(16).toUpperCase()}';
+  return '{so:"$soName",memory:"${_resolvePointerExpressionMemory(result.regionTypeKey)}",addr:$addr,offsets:[$offset]}';
+}
+
+String _resolvePointerExpressionMemory(String regionTypeKey) {
+  return switch (regionTypeKey) {
+    'cBss' => 'Cb',
+    'cData' => 'Cd',
+    'cAlloc' => 'Ca',
+    'cHeap' => 'Ch',
+    'codeApp' => 'Xa',
+    'codeSys' => 'Xs',
+    'java' => 'J',
+    'javaHeap' => 'Jh',
+    'stack' => 'S',
+    'ashmem' => 'As',
+    'bad' => 'B',
+    'other' => 'O',
+    _ => 'A',
+  };
 }

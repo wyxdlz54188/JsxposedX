@@ -2120,6 +2120,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get memoryToolPointerActionJumpToTarget => '跳转到指针目标';
 
   @override
+  String get memoryToolPointerActionCopyPointerAddress => '复制指针地址';
+
+  @override
+  String get memoryToolPointerActionCopyPointedAddress => '复制指向地址';
+
+  @override
+  String get memoryToolPointerActionCopyTargetAddress => '复制目标地址';
+
+  @override
+  String get memoryToolPointerActionCopyExpression => '复制表达式';
+
+  @override
   String get memoryToolPointerOffsetLabel => '偏移';
 
   @override
