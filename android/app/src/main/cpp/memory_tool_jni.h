@@ -72,6 +72,11 @@ public:
 
     static void ResumeAfterBreakpoint(jlong pid);
 
+    static jstring PatchMemoryInstructionJson(JNIEnv* env,
+                                              jlong pid,
+                                              jlong address,
+                                              jstring input_text);
+
     static jstring ReadMemoryValuesJson(JNIEnv* env,
                                         jlongArray pids,
                                         jlongArray addresses,

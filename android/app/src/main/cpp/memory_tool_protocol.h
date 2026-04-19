@@ -32,6 +32,8 @@ std::string SerializeMemoryBreakpointState(const MemoryBreakpointStateView& stat
 
 std::string SerializeMemoryBreakpointHits(const std::vector<MemoryBreakpointHitView>& hits);
 
+std::string SerializeInstructionPatchResult(const InstructionPatchResultView& result);
+
 std::string SerializeMemoryValuePreviews(const std::vector<MemoryValuePreview>& previews);
 
 std::string SerializeFrozenMemoryValues(const std::vector<FrozenMemoryValueView>& values);

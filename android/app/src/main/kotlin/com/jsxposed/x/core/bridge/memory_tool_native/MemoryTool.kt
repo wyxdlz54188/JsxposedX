@@ -218,6 +218,10 @@ class MemoryTool(private val context: Context) {
         daemonClient.resumeAfterBreakpoint(pid)
     }
 
+    fun patchMemoryInstruction(request: MemoryInstructionPatchRequest): MemoryInstructionPatchResult {
+        return daemonClient.patchMemoryInstruction(request)
+    }
+
     fun readMemoryValues(requests: List<MemoryReadRequest>): List<MemoryValuePreview> {
         return daemonClient.readMemoryValues(requests)
     }

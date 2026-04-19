@@ -11,6 +11,10 @@ abstract class MemoryActionRepository {
 
   Future<void> writeMemoryValue({required MemoryWriteRequest request});
 
+  Future<MemoryInstructionPatchResult> patchMemoryInstruction({
+    required MemoryInstructionPatchRequest request,
+  });
+
   Future<void> setMemoryFreeze({required MemoryFreezeRequest request});
 
   Future<List<FrozenMemoryValue>> getFrozenMemoryValues();

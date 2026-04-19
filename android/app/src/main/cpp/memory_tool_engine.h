@@ -62,6 +62,10 @@ public:
 
     void ResumeAfterBreakpoint(int pid);
 
+    InstructionPatchResultView PatchMemoryInstruction(int pid,
+                                                      uint64_t address,
+                                                      const std::string& input_text);
+
     std::vector<MemoryValuePreview> ReadMemoryValues(const std::vector<MemoryReadRequest>& requests);
 
     void WriteMemoryValue(const MemoryWriteRequest& request);

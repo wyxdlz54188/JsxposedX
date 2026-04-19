@@ -184,6 +184,14 @@ private class MemoryToolDaemonServer(
                 JSONObject.NULL
             }
 
+            "patchMemoryInstruction" -> JSONObject(
+                MemoryToolHelperNativeBridge.patchMemoryInstructionJson(
+                    pid = params.getLong("pid"),
+                    address = params.getLong("address"),
+                    inputText = params.getString("instruction")
+                )
+            )
+
             "readMemoryValues" -> JSONArray(
                 MemoryToolHelperNativeBridge.readMemoryValuesJson(
                     pids = extractLongArray(params.getJSONArray("requests"), "pid"),

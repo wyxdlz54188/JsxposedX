@@ -13,12 +13,15 @@ class MemoryToolDebugDetailTab extends StatelessWidget {
     required this.breakpoint,
     required this.selectedHit,
     required this.valueInfo,
+    required this.hitChangeInfo,
+    required this.isInstructionPatching,
     required this.onOpenCurrentValueActions,
     required this.onOpenAddressActions,
     required this.onOpenPointerActions,
     required this.onOpenModuleActions,
+    required this.onEditInstruction,
     required this.onOpenInstructionActions,
-    required this.onOpenRewriteActions,
+    required this.onOpenHitChangeActions,
     required this.onSelectHit,
     required this.onOpenHitActions,
   });
@@ -27,12 +30,15 @@ class MemoryToolDebugDetailTab extends StatelessWidget {
   final MemoryBreakpoint? breakpoint;
   final MemoryBreakpointHit? selectedHit;
   final MemoryToolDebugBreakpointValueInfo? valueInfo;
+  final MemoryToolDebugHitChangeInfo? hitChangeInfo;
+  final bool isInstructionPatching;
   final VoidCallback onOpenCurrentValueActions;
   final VoidCallback onOpenAddressActions;
   final VoidCallback onOpenPointerActions;
   final VoidCallback onOpenModuleActions;
+  final VoidCallback? onEditInstruction;
   final VoidCallback? onOpenInstructionActions;
-  final VoidCallback? onOpenRewriteActions;
+  final VoidCallback? onOpenHitChangeActions;
   final ValueChanged<MemoryBreakpointHit> onSelectHit;
   final ValueChanged<MemoryBreakpointHit> onOpenHitActions;
 
@@ -58,12 +64,15 @@ class MemoryToolDebugDetailTab extends StatelessWidget {
                   breakpoint: breakpoint,
                   selectedHit: selectedHit,
                   valueInfo: valueInfo,
+                  hitChangeInfo: hitChangeInfo,
+                  isInstructionPatching: isInstructionPatching,
                   onOpenCurrentValueActions: onOpenCurrentValueActions,
                   onOpenAddressActions: onOpenAddressActions,
                   onOpenPointerActions: onOpenPointerActions,
                   onOpenModuleActions: onOpenModuleActions,
+                  onEditInstruction: onEditInstruction,
                   onOpenInstructionActions: onOpenInstructionActions,
-                  onOpenRewriteActions: onOpenRewriteActions,
+                  onOpenHitChangeActions: onOpenHitChangeActions,
                   onSelectHit: onSelectHit,
                   onOpenHitActions: onOpenHitActions,
                 ),
@@ -79,12 +88,15 @@ class _MemoryToolDebugDetailContent extends StatelessWidget {
     required this.breakpoint,
     required this.selectedHit,
     required this.valueInfo,
+    required this.hitChangeInfo,
+    required this.isInstructionPatching,
     required this.onOpenCurrentValueActions,
     required this.onOpenAddressActions,
     required this.onOpenPointerActions,
     required this.onOpenModuleActions,
+    required this.onEditInstruction,
     required this.onOpenInstructionActions,
-    required this.onOpenRewriteActions,
+    required this.onOpenHitChangeActions,
     required this.onSelectHit,
     required this.onOpenHitActions,
   });
@@ -93,12 +105,15 @@ class _MemoryToolDebugDetailContent extends StatelessWidget {
   final MemoryBreakpoint? breakpoint;
   final MemoryBreakpointHit? selectedHit;
   final MemoryToolDebugBreakpointValueInfo? valueInfo;
+  final MemoryToolDebugHitChangeInfo? hitChangeInfo;
+  final bool isInstructionPatching;
   final VoidCallback onOpenCurrentValueActions;
   final VoidCallback onOpenAddressActions;
   final VoidCallback onOpenPointerActions;
   final VoidCallback onOpenModuleActions;
+  final VoidCallback? onEditInstruction;
   final VoidCallback? onOpenInstructionActions;
-  final VoidCallback? onOpenRewriteActions;
+  final VoidCallback? onOpenHitChangeActions;
   final ValueChanged<MemoryBreakpointHit> onSelectHit;
   final ValueChanged<MemoryBreakpointHit> onOpenHitActions;
 
@@ -142,26 +157,43 @@ class _MemoryToolDebugDetailContent extends StatelessWidget {
       ),
     ];
 
-    if (group.instructionText.isNotEmpty) {
-      detailTiles.addAll(<Widget>[
-        SizedBox(height: 6.r),
-        MemoryToolDebugDetailInfoTile(
-          title: context.l10n.memoryToolDebugInstruction,
-          value: group.instructionText.trim(),
-          monospace: true,
-          onLongPress: onOpenInstructionActions,
-        ),
-      ]);
-    }
+    detailTiles.addAll(<Widget>[
+      SizedBox(height: 6.r),
+      MemoryToolDebugDetailInfoTile(
+        title: context.l10n.memoryToolDebugInstruction,
+        value: group.instructionText.trim().isEmpty
+            ? '--'
+            : group.instructionText.trim(),
+        onTap: isInstructionPatching ? null : onEditInstruction,
+        monospace: true,
+        onLongPress: onOpenInstructionActions,
+        trailing: isInstructionPatching
+            ? SizedBox(
+                width: 16.r,
+                height: 16.r,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: context.colorScheme.primary,
+                ),
+              )
+            : onEditInstruction == null
+            ? null
+            : Icon(
+                Icons.edit_outlined,
+                size: 16.r,
+                color: context.colorScheme.onSurfaceVariant,
+              ),
+      ),
+    ]);
 
-    if (group.topTransition != null) {
+    if (selectedHit != null) {
       detailTiles.addAll(<Widget>[
         SizedBox(height: 6.r),
         MemoryToolDebugDetailInfoTile(
-          title: context.l10n.memoryToolDebugCommonRewrite,
-          value: group.topTransition!.summary,
+          title: context.isZh ? '命中变化' : 'Hit Changes',
+          value: hitChangeInfo?.displayText ?? '--',
           monospace: true,
-          onLongPress: onOpenRewriteActions,
+          onLongPress: onOpenHitChangeActions,
         ),
       ]);
     }
@@ -186,27 +218,24 @@ class _MemoryToolDebugDetailContent extends StatelessWidget {
           ),
         ),
         SliverList(
-          delegate: SliverChildBuilderDelegate(
-            (context, index) {
-              final hit = group.hits[index];
-              return Padding(
-                padding: EdgeInsets.only(bottom: 6.r),
-                child: MemoryToolDebugHitEntryTile(
-                  hit: hit,
-                  selected:
-                      buildMemoryToolDebugHitKey(hit) ==
-                      buildMemoryToolDebugHitKey(selectedHit),
-                  onTap: () {
-                    onSelectHit(hit);
-                  },
-                  onLongPress: () {
-                    onOpenHitActions(hit);
-                  },
-                ),
-              );
-            },
-            childCount: group.hits.length,
-          ),
+          delegate: SliverChildBuilderDelegate((context, index) {
+            final hit = group.hits[index];
+            return Padding(
+              padding: EdgeInsets.only(bottom: 6.r),
+              child: MemoryToolDebugHitEntryTile(
+                hit: hit,
+                selected:
+                    buildMemoryToolDebugHitKey(hit) ==
+                    buildMemoryToolDebugHitKey(selectedHit),
+                onTap: () {
+                  onSelectHit(hit);
+                },
+                onLongPress: () {
+                  onOpenHitActions(hit);
+                },
+              ),
+            );
+          }, childCount: group.hits.length),
         ),
       ],
     );

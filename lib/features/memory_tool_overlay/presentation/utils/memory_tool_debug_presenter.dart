@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:JsxposedX/features/memory_tool_overlay/presentation/utils/memory_tool_search_result_presenter.dart';
@@ -54,6 +55,29 @@ class MemoryToolDebugWriterTransition {
   final String summary;
   final int count;
   final int latestTimestamp;
+}
+
+class MemoryToolDebugHitChangeLine {
+  const MemoryToolDebugHitChangeLine({
+    required this.label,
+    required this.value,
+  });
+
+  final String label;
+  final String value;
+}
+
+class MemoryToolDebugHitChangeInfo {
+  const MemoryToolDebugHitChangeInfo({
+    required this.lines,
+    required this.primarySummary,
+  });
+
+  final List<MemoryToolDebugHitChangeLine> lines;
+  final String primarySummary;
+
+  String get displayText =>
+      lines.map((line) => '${line.label}: ${line.value}').join('\n');
 }
 
 MemoryBreakpoint? resolveMemoryToolDebugSelectedBreakpoint({
@@ -223,6 +247,90 @@ String formatMemoryToolDebugAccessType(
   };
 }
 
+MemoryToolDebugHitChangeInfo? buildMemoryToolDebugHitChangeInfo({
+  required MemoryBreakpoint? breakpoint,
+  required MemoryBreakpointHit? hit,
+}) {
+  if (hit == null) {
+    return null;
+  }
+
+  final oldValue = hit.oldValue;
+  final newValue = hit.newValue;
+  final lines = <MemoryToolDebugHitChangeLine>[];
+  final addedLabels = <String>{};
+
+  void addLine(String label, String value) {
+    final trimmedValue = value.trim();
+    if (trimmedValue.isEmpty || !addedLabels.add(label)) {
+      return;
+    }
+    lines.add(MemoryToolDebugHitChangeLine(label: label, value: trimmedValue));
+  }
+
+  final primaryType = breakpoint?.type;
+  if (primaryType != null &&
+      _supportsDebugHitChangeType(
+        type: primaryType,
+        oldValue: oldValue,
+        newValue: newValue,
+      )) {
+    addLine(
+      _mapDebugHitChangeTypeLabel(primaryType),
+      _formatDebugHitChangeForType(
+        type: primaryType,
+        oldValue: oldValue,
+        newValue: newValue,
+      ),
+    );
+  }
+
+  addLine(
+    'HEX',
+    '${formatMemoryToolDebugBytes(oldValue)} -> ${formatMemoryToolDebugBytes(newValue)}',
+  );
+
+  final textTransition = _tryFormatDebugHitTextTransition(oldValue, newValue);
+  if (textTransition != null) {
+    addLine(textTransition.$1, textTransition.$2);
+  }
+
+  for (final type in const <SearchValueType>[
+    SearchValueType.i8,
+    SearchValueType.i16,
+    SearchValueType.i32,
+    SearchValueType.i64,
+    SearchValueType.f32,
+    SearchValueType.f64,
+  ]) {
+    if (type == primaryType ||
+        !_supportsDebugHitChangeType(
+          type: type,
+          oldValue: oldValue,
+          newValue: newValue,
+        )) {
+      continue;
+    }
+    addLine(
+      _mapDebugHitChangeTypeLabel(type),
+      _formatDebugHitChangeForType(
+        type: type,
+        oldValue: oldValue,
+        newValue: newValue,
+      ),
+    );
+  }
+
+  if (lines.isEmpty) {
+    return null;
+  }
+
+  return MemoryToolDebugHitChangeInfo(
+    lines: lines,
+    primarySummary: lines.first.value,
+  );
+}
+
 MemoryToolDebugBreakpointValueInfo? resolveMemoryToolDebugBreakpointValueInfo({
   required MemoryBreakpoint? breakpoint,
   required MemoryBreakpointHit? hit,
@@ -231,7 +339,7 @@ MemoryToolDebugBreakpointValueInfo? resolveMemoryToolDebugBreakpointValueInfo({
     return null;
   }
   final hasHitValue = hit != null;
-  final rawBytes = hasHitValue ? hit!.newValue : Uint8List(0);
+  final rawBytes = hasHitValue ? hit.newValue : Uint8List(0);
   final displayValue = hasHitValue
       ? resolveMemoryToolSearchResultValueByType(
           type: breakpoint.type,
@@ -259,4 +367,111 @@ MemoryToolDebugBreakpointValueInfo? resolveMemoryToolDebugBreakpointValueInfo({
     preview: preview,
     result: result,
   );
+}
+
+bool _supportsDebugHitChangeType({
+  required SearchValueType type,
+  required Uint8List oldValue,
+  required Uint8List newValue,
+}) {
+  final requiredLength = switch (type) {
+    SearchValueType.i8 => 1,
+    SearchValueType.i16 => 2,
+    SearchValueType.i32 || SearchValueType.f32 => 4,
+    SearchValueType.i64 || SearchValueType.f64 => 8,
+    SearchValueType.bytes => 1,
+  };
+  return oldValue.length >= requiredLength && newValue.length >= requiredLength;
+}
+
+String _mapDebugHitChangeTypeLabel(SearchValueType type) {
+  return switch (type) {
+    SearchValueType.i8 => 'I8',
+    SearchValueType.i16 => 'I16',
+    SearchValueType.i32 => 'I32',
+    SearchValueType.i64 => 'I64',
+    SearchValueType.f32 => 'F32',
+    SearchValueType.f64 => 'F64',
+    SearchValueType.bytes => 'HEX',
+  };
+}
+
+String _formatDebugHitChangeForType({
+  required SearchValueType type,
+  required Uint8List oldValue,
+  required Uint8List newValue,
+}) {
+  final oldDisplay = resolveMemoryToolSearchResultValueByType(
+    type: type,
+    rawBytes: oldValue,
+    fallbackDisplayValue: formatMemoryToolDebugBytes(oldValue),
+  );
+  final newDisplay = resolveMemoryToolSearchResultValueByType(
+    type: type,
+    rawBytes: newValue,
+    fallbackDisplayValue: formatMemoryToolDebugBytes(newValue),
+  );
+  return '$oldDisplay -> $newDisplay';
+}
+
+(String, String)? _tryFormatDebugHitTextTransition(
+  Uint8List oldValue,
+  Uint8List newValue,
+) {
+  final utf8Old = _tryDecodeDebugText(oldValue, utf16: false);
+  final utf8New = _tryDecodeDebugText(newValue, utf16: false);
+  if (utf8Old != null && utf8New != null) {
+    return ('UTF-8', '"$utf8Old" -> "$utf8New"');
+  }
+
+  final utf16Old = _tryDecodeDebugText(oldValue, utf16: true);
+  final utf16New = _tryDecodeDebugText(newValue, utf16: true);
+  if (utf16Old != null && utf16New != null) {
+    return ('UTF-16', '"$utf16Old" -> "$utf16New"');
+  }
+  return null;
+}
+
+String? _tryDecodeDebugText(Uint8List rawBytes, {required bool utf16}) {
+  if (rawBytes.isEmpty) {
+    return null;
+  }
+
+  try {
+    final decoded = utf16
+        ? _decodeUtf16LeDebugText(rawBytes)
+        : utf8.decode(rawBytes, allowMalformed: false);
+    return _isReadableDebugText(decoded) ? decoded : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+String _decodeUtf16LeDebugText(Uint8List rawBytes) {
+  if (rawBytes.length < 2 || rawBytes.length.isOdd) {
+    throw const FormatException('Invalid UTF-16 bytes.');
+  }
+  final codeUnits = <int>[];
+  for (int index = 0; index < rawBytes.length; index += 2) {
+    codeUnits.add(rawBytes[index] | (rawBytes[index + 1] << 8));
+  }
+  return String.fromCharCodes(codeUnits);
+}
+
+bool _isReadableDebugText(String value) {
+  final trimmed = value.trim();
+  if (trimmed.isEmpty) {
+    return false;
+  }
+  for (final codePoint in trimmed.runes) {
+    if (codePoint == 0) {
+      return false;
+    }
+    final isControl =
+        codePoint < 32 && codePoint != 9 && codePoint != 10 && codePoint != 13;
+    if (isControl) {
+      return false;
+    }
+  }
+  return true;
 }

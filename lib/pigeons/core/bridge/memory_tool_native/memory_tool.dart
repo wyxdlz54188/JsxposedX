@@ -494,6 +494,36 @@ class PointerScanTaskState {
   });
 }
 
+class MemoryInstructionPatchRequest {
+  final int pid;
+  final int address;
+  final String instruction;
+
+  const MemoryInstructionPatchRequest({
+    required this.pid,
+    required this.address,
+    required this.instruction,
+  });
+}
+
+class MemoryInstructionPatchResult {
+  final int address;
+  final String architecture;
+  final int instructionSize;
+  final Uint8List beforeBytes;
+  final Uint8List afterBytes;
+  final String instructionText;
+
+  const MemoryInstructionPatchResult({
+    required this.address,
+    required this.architecture,
+    required this.instructionSize,
+    required this.beforeBytes,
+    required this.afterBytes,
+    required this.instructionText,
+  });
+}
+
 @HostApi()
 abstract class MemoryToolNative {
   @async
@@ -552,7 +582,11 @@ abstract class MemoryToolNative {
   MemoryBreakpointState getMemoryBreakpointState(int pid);
 
   @async
-  List<MemoryBreakpointHit> getMemoryBreakpointHits(int pid, int offset, int limit);
+  List<MemoryBreakpointHit> getMemoryBreakpointHits(
+    int pid,
+    int offset,
+    int limit,
+  );
 
   @async
   void clearMemoryBreakpointHits(int pid);
@@ -565,6 +599,11 @@ abstract class MemoryToolNative {
 
   @async
   void writeMemoryValue(MemoryWriteRequest request);
+
+  @async
+  MemoryInstructionPatchResult patchMemoryInstruction(
+    MemoryInstructionPatchRequest request,
+  );
 
   @async
   void setMemoryFreeze(MemoryFreezeRequest request);

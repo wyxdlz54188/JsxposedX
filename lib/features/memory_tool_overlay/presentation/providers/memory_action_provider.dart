@@ -157,6 +157,27 @@ class MemoryValueAction extends _$MemoryValueAction {
     }
   }
 
+  Future<MemoryInstructionPatchResult> patchMemoryInstruction({
+    required MemoryInstructionPatchRequest request,
+  }) async {
+    state = const AsyncValue.loading();
+    MemoryInstructionPatchResult? result;
+    final nextState = await AsyncValue.guard(() async {
+      result = await ref
+          .read(memoryActionRepositoryProvider)
+          .patchMemoryInstruction(request: request);
+      _invalidateValueQueries();
+    });
+    state = nextState;
+    if (nextState.hasError) {
+      Error.throwWithStackTrace(
+        nextState.error!,
+        nextState.asError!.stackTrace,
+      );
+    }
+    return result!;
+  }
+
   Future<void> setMemoryFreeze({required MemoryFreezeRequest request}) async {
     state = const AsyncValue.loading();
     final nextState = await AsyncValue.guard(() async {

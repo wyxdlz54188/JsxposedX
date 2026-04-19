@@ -5,6 +5,7 @@ import 'package:JsxposedX/core/extensions/context_extensions.dart';
 import 'package:JsxposedX/features/memory_tool_overlay/presentation/pages/tabs/debug_tabs/memory_tool_debug_breakpoints_tab.dart';
 import 'package:JsxposedX/features/memory_tool_overlay/presentation/pages/tabs/debug_tabs/memory_tool_debug_detail_tab.dart';
 import 'package:JsxposedX/features/memory_tool_overlay/presentation/pages/tabs/debug_tabs/memory_tool_debug_writers_tab.dart';
+import 'package:JsxposedX/features/memory_tool_overlay/presentation/providers/memory_action_provider.dart';
 import 'package:JsxposedX/features/memory_tool_overlay/presentation/providers/memory_breakpoint_provider.dart';
 import 'package:JsxposedX/features/memory_tool_overlay/presentation/providers/memory_query_provider.dart';
 import 'package:JsxposedX/features/memory_tool_overlay/presentation/providers/memory_tool_browse_provider.dart';
@@ -12,6 +13,7 @@ import 'package:JsxposedX/features/memory_tool_overlay/presentation/providers/me
 import 'package:JsxposedX/features/memory_tool_overlay/presentation/providers/memory_tool_saved_items_provider.dart';
 import 'package:JsxposedX/features/memory_tool_overlay/presentation/utils/memory_tool_debug_presenter.dart';
 import 'package:JsxposedX/features/memory_tool_overlay/presentation/utils/memory_tool_search_result_presenter.dart';
+import 'package:JsxposedX/features/memory_tool_overlay/presentation/widgets/memory_tool_debug_instruction_editor_dialog.dart';
 import 'package:JsxposedX/features/memory_tool_overlay/presentation/widgets/memory_tool_debug_primitives.dart';
 import 'package:JsxposedX/features/memory_tool_overlay/presentation/widgets/memory_tool_pointer_scan_dialog.dart';
 import 'package:JsxposedX/features/memory_tool_overlay/presentation/widgets/memory_tool_result_selection_bar.dart';
@@ -42,8 +44,12 @@ class MemoryToolDebugTab extends HookConsumerWidget {
     final pid = selectedProcess?.pid;
     final selectedBreakpointId = ref.watch(memoryBreakpointSelectedIdProvider);
     final breakpointActionState = ref.watch(memoryBreakpointActionProvider);
-    final browseNotifier = ref.read(memoryToolBrowseControllerProvider.notifier);
-    final pointerNotifier = ref.read(memoryToolPointerControllerProvider.notifier);
+    final browseNotifier = ref.read(
+      memoryToolBrowseControllerProvider.notifier,
+    );
+    final pointerNotifier = ref.read(
+      memoryToolPointerControllerProvider.notifier,
+    );
     final savedItemsNotifier = ref.read(memoryToolSavedItemsProvider.notifier);
     final selectedWriterKey = useState<String?>(null);
     final selectedHitKey = useState<String?>(null);
@@ -55,6 +61,13 @@ class MemoryToolDebugTab extends HookConsumerWidget {
     final activeAutoChaseAddress = useState<int?>(null);
     final activeDetailActions =
         useState<List<MemoryToolSearchResultActionItemData>?>(null);
+    final activeInstructionEditor =
+        useState<_MemoryToolDebugInstructionEditorState?>(null);
+    final patchedInstructions =
+        useState<Map<int, MemoryInstructionPatchResult>>(
+          <int, MemoryInstructionPatchResult>{},
+        );
+    final pendingInstructionAddresses = useState<Set<int>>(<int>{});
     final compactTabController = useTabController(initialLength: 3);
     final landscapeDetailTabController = useTabController(initialLength: 2);
     final stateAsync = pid == null
@@ -84,6 +97,9 @@ class MemoryToolDebugTab extends HookConsumerWidget {
     useEffect(() {
       selectedWriterKey.value = null;
       selectedHitKey.value = null;
+      activeInstructionEditor.value = null;
+      patchedInstructions.value = <int, MemoryInstructionPatchResult>{};
+      pendingInstructionAddresses.value = <int>{};
       compactTabController.index = 0;
       landscapeDetailTabController.index = 0;
       return null;
@@ -135,7 +151,27 @@ class MemoryToolDebugTab extends HookConsumerWidget {
         : allHits
               .where((hit) => hit.breakpointId == selectedBreakpoint.id)
               .toList(growable: false);
-    final writerGroups = buildMemoryToolDebugWriterGroups(hits);
+    final rawWriterGroups = buildMemoryToolDebugWriterGroups(hits);
+    final writerGroups = rawWriterGroups
+        .map((group) {
+          final override = patchedInstructions.value[group.pc];
+          if (override == null) {
+            return group;
+          }
+          return MemoryToolDebugWriterGroup(
+            key: group.key,
+            pc: group.pc,
+            moduleName: group.moduleName,
+            moduleOffset: group.moduleOffset,
+            instructionText: override.instructionText,
+            hitCount: group.hitCount,
+            threadCount: group.threadCount,
+            latestTimestamp: group.latestTimestamp,
+            hits: group.hits,
+            topTransition: group.topTransition,
+          );
+        })
+        .toList(growable: false);
 
     useEffect(() {
       if (pid == null) {
@@ -159,36 +195,44 @@ class MemoryToolDebugTab extends HookConsumerWidget {
       return null;
     }, [pid, selectedBreakpoint?.id, writerGroups, selectedWriterKey.value]);
 
-    useEffect(() {
-      final nextOverrides = <String, bool>{};
-      for (final entry in breakpointEnabledOverrides.value.entries) {
-        MemoryBreakpoint? matchedBreakpoint;
-        for (final breakpoint in breakpoints) {
-          if (breakpoint.id == entry.key) {
-            matchedBreakpoint = breakpoint;
-            break;
+    useEffect(
+      () {
+        final nextOverrides = <String, bool>{};
+        for (final entry in breakpointEnabledOverrides.value.entries) {
+          MemoryBreakpoint? matchedBreakpoint;
+          for (final breakpoint in breakpoints) {
+            if (breakpoint.id == entry.key) {
+              matchedBreakpoint = breakpoint;
+              break;
+            }
+          }
+          if (matchedBreakpoint != null &&
+              matchedBreakpoint.enabled != entry.value) {
+            nextOverrides[entry.key] = entry.value;
           }
         }
-        if (matchedBreakpoint != null && matchedBreakpoint.enabled != entry.value) {
-          nextOverrides[entry.key] = entry.value;
+        if (nextOverrides.length != breakpointEnabledOverrides.value.length) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            breakpointEnabledOverrides.value = nextOverrides;
+          });
         }
-      }
-      if (nextOverrides.length != breakpointEnabledOverrides.value.length) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          breakpointEnabledOverrides.value = nextOverrides;
-        });
-      }
 
-      final nextPending = pendingBreakpointIds.value
-          .where((breakpointId) => nextOverrides.containsKey(breakpointId))
-          .toSet();
-      if (nextPending.length != pendingBreakpointIds.value.length) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          pendingBreakpointIds.value = nextPending;
-        });
-      }
-      return null;
-    }, [breakpoints, breakpointEnabledOverrides.value, pendingBreakpointIds.value]);
+        final nextPending = pendingBreakpointIds.value
+            .where((breakpointId) => nextOverrides.containsKey(breakpointId))
+            .toSet();
+        if (nextPending.length != pendingBreakpointIds.value.length) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            pendingBreakpointIds.value = nextPending;
+          });
+        }
+        return null;
+      },
+      [
+        breakpoints,
+        breakpointEnabledOverrides.value,
+        pendingBreakpointIds.value,
+      ],
+    );
 
     final selectedWriterGroup = resolveMemoryToolDebugSelectedWriterGroup(
       groups: writerGroups,
@@ -226,6 +270,10 @@ class MemoryToolDebugTab extends HookConsumerWidget {
       breakpoint: selectedBreakpoint,
       hit: selectedHit,
     );
+    final selectedHitChangeInfo = buildMemoryToolDebugHitChangeInfo(
+      breakpoint: selectedBreakpoint,
+      hit: selectedHit,
+    );
     final state = stateAsync.asData?.value;
     final isPaused = state?.isProcessPaused ?? false;
 
@@ -244,9 +292,9 @@ class MemoryToolDebugTab extends HookConsumerWidget {
 
     Future<void> copyText(String value) async {
       final copied = await FlutterOverlayWindow.setClipboardData(value);
-      ref.read(overlayWindowHostRuntimeProvider.notifier).showToast(
-        copied ? context.l10n.codeCopied : context.l10n.error,
-      );
+      ref
+          .read(overlayWindowHostRuntimeProvider.notifier)
+          .showToast(copied ? context.l10n.codeCopied : context.l10n.error);
     }
 
     Future<void> previewRawAddress({
@@ -311,9 +359,7 @@ class MemoryToolDebugTab extends HookConsumerWidget {
           title:
               '${context.l10n.memoryToolDebugActionCopyHex}: ${formatMemoryToolSearchResultHex(valueInfo.rawBytes)}',
           onTap: () async {
-            await copyText(
-              formatMemoryToolSearchResultHex(valueInfo.rawBytes),
-            );
+            await copyText(formatMemoryToolSearchResultHex(valueInfo.rawBytes));
             activeDetailActions.value = null;
           },
         ),
@@ -411,9 +457,7 @@ class MemoryToolDebugTab extends HookConsumerWidget {
           title:
               '${context.l10n.memoryToolDebugActionCopyAddress}: ${formatMemoryToolSearchResultAddress(writerGroup.pc)}',
           onTap: () async {
-            await copyText(
-              formatMemoryToolSearchResultAddress(writerGroup.pc),
-            );
+            await copyText(formatMemoryToolSearchResultAddress(writerGroup.pc));
             activeDetailActions.value = null;
           },
         ),
@@ -440,6 +484,53 @@ class MemoryToolDebugTab extends HookConsumerWidget {
       ];
     }
 
+    List<MemoryToolSearchResultActionItemData> buildInstructionActions({
+      required int address,
+      required String currentValue,
+    }) {
+      final trimmedCurrent = currentValue.trim();
+      return <MemoryToolSearchResultActionItemData>[
+        if (trimmedCurrent.isNotEmpty)
+          MemoryToolSearchResultActionItemData(
+            icon: Icons.copy_all_rounded,
+            title:
+                '${context.isZh ? '复制指令' : 'Copy Instruction'}: $trimmedCurrent',
+            onTap: () async {
+              await copyText(trimmedCurrent);
+              activeDetailActions.value = null;
+            },
+          ),
+        MemoryToolSearchResultActionItemData(
+          icon: Icons.edit_outlined,
+          title: context.isZh ? '编辑指令' : 'Edit Instruction',
+          onTap: () async {
+            activeDetailActions.value = null;
+            activeInstructionEditor.value =
+                _MemoryToolDebugInstructionEditorState(
+                  address: address,
+                  currentValue: currentValue,
+                );
+          },
+        ),
+      ];
+    }
+
+    List<MemoryToolSearchResultActionItemData> buildHitChangeActions() {
+      if (selectedHitChangeInfo == null) {
+        return const <MemoryToolSearchResultActionItemData>[];
+      }
+      return <MemoryToolSearchResultActionItemData>[
+        MemoryToolSearchResultActionItemData(
+          icon: Icons.copy_all_rounded,
+          title: context.isZh ? '复制命中变化' : 'Copy Hit Changes',
+          onTap: () async {
+            await copyText(selectedHitChangeInfo.displayText);
+            activeDetailActions.value = null;
+          },
+        ),
+      ];
+    }
+
     List<MemoryToolSearchResultActionItemData> buildHitActions(
       MemoryBreakpointHit hit,
     ) {
@@ -452,7 +543,8 @@ class MemoryToolDebugTab extends HookConsumerWidget {
       return <MemoryToolSearchResultActionItemData>[
         MemoryToolSearchResultActionItemData(
           icon: Icons.tune_rounded,
-          title: '${context.l10n.memoryToolDebugActionCopyValue}: $displayValue',
+          title:
+              '${context.l10n.memoryToolDebugActionCopyValue}: $displayValue',
           onTap: () async {
             await copyText(displayValue);
             activeDetailActions.value = null;
@@ -493,6 +585,97 @@ class MemoryToolDebugTab extends HookConsumerWidget {
       ];
     }
 
+    Future<void> saveInstructionEdit({
+      required _MemoryToolDebugInstructionEditorState editor,
+      required String value,
+    }) async {
+      final failurePrefix = context.isZh ? '修改失败' : 'Patch failed';
+      final fallbackErrorMessage = context.l10n.error;
+      final targetAddress = editor.address;
+      final breakpointToDisable = selectedBreakpoint;
+      final didDisableBreakpoint = breakpointToDisable?.enabled ?? false;
+      final successMessage = context.isZh
+          ? (didDisableBreakpoint ? '指令已修改，当前断点已停用' : '指令已修改')
+          : (didDisableBreakpoint
+                ? 'Instruction patched, breakpoint disabled'
+                : 'Instruction patched');
+      pendingInstructionAddresses.value = <int>{
+        ...pendingInstructionAddresses.value,
+        targetAddress,
+      };
+      try {
+        final result = await ref
+            .read(memoryValueActionProvider.notifier)
+            .patchMemoryInstruction(
+              request: MemoryInstructionPatchRequest(
+                pid: pid,
+                address: targetAddress,
+                instruction: value,
+              ),
+            );
+        patchedInstructions.value = <int, MemoryInstructionPatchResult>{
+          ...patchedInstructions.value,
+          targetAddress: result,
+        };
+        activeInstructionEditor.value = null;
+        final nextPending = <int>{...pendingInstructionAddresses.value};
+        nextPending.remove(targetAddress);
+        pendingInstructionAddresses.value = nextPending;
+
+        if (breakpointToDisable != null && breakpointToDisable.enabled) {
+          breakpointEnabledOverrides.value = <String, bool>{
+            ...breakpointEnabledOverrides.value,
+            breakpointToDisable.id: false,
+          };
+          pendingBreakpointIds.value = <String>{
+            ...pendingBreakpointIds.value,
+            breakpointToDisable.id,
+          };
+          try {
+            await ref
+                .read(memoryBreakpointActionProvider.notifier)
+                .setMemoryBreakpointEnabled(
+                  pid: pid,
+                  breakpointId: breakpointToDisable.id,
+                  enabled: false,
+                );
+          } catch (_) {
+            final nextOverrides = <String, bool>{
+              ...breakpointEnabledOverrides.value,
+            };
+            nextOverrides.remove(breakpointToDisable.id);
+            breakpointEnabledOverrides.value = nextOverrides;
+            final nextPendingBreakpointIds = <String>{
+              ...pendingBreakpointIds.value,
+            };
+            nextPendingBreakpointIds.remove(breakpointToDisable.id);
+            pendingBreakpointIds.value = nextPendingBreakpointIds;
+            rethrow;
+          }
+        }
+
+        await ref
+            .read(memoryBreakpointActionProvider.notifier)
+            .clearMemoryBreakpointHits(pid: pid);
+        await ToastOverlayMessage.show(
+          successMessage,
+          duration: const Duration(milliseconds: 1200),
+        );
+      } catch (error) {
+        final message = error.toString().replaceFirst('Exception: ', '').trim();
+        await ToastOverlayMessage.show(
+          '$failurePrefix: ${message.isEmpty ? fallbackErrorMessage : message}',
+          duration: const Duration(milliseconds: 1600),
+        );
+        rethrow;
+      } finally {
+        final nextPending = <int>{...pendingInstructionAddresses.value};
+        nextPending.remove(targetAddress);
+        pendingInstructionAddresses.value = nextPending;
+        await refreshAll();
+      }
+    }
+
     return Stack(
       children: <Widget>[
         LayoutBuilder(
@@ -514,7 +697,11 @@ class MemoryToolDebugTab extends HookConsumerWidget {
                   );
             final selectedInstructionText =
                 selectedWriterGroup?.instructionText.trim() ?? '';
-            final selectedTransition = selectedWriterGroup?.topTransition;
+            final isInstructionPatching =
+                selectedWriterGroup != null &&
+                pendingInstructionAddresses.value.contains(
+                  selectedWriterGroup.pc,
+                );
 
             final breakpointTab = MemoryToolDebugBreakpointsTab(
               breakpointsAsync: breakpointsAsync,
@@ -588,6 +775,8 @@ class MemoryToolDebugTab extends HookConsumerWidget {
               breakpoint: selectedBreakpoint,
               selectedHit: selectedHit,
               valueInfo: selectedValueInfo,
+              hitChangeInfo: selectedHitChangeInfo,
+              isInstructionPatching: isInstructionPatching,
               onOpenCurrentValueActions: () {
                 openDetailActions(buildCurrentValueActions());
               },
@@ -609,27 +798,31 @@ class MemoryToolDebugTab extends HookConsumerWidget {
                   ),
                 );
               },
-              onOpenInstructionActions: selectedInstructionText.isEmpty
+              onEditInstruction:
+                  selectedWriterGroup == null || isInstructionPatching
+                  ? null
+                  : () {
+                      activeInstructionEditor.value =
+                          _MemoryToolDebugInstructionEditorState(
+                            address: selectedWriterGroup.pc,
+                            currentValue: selectedInstructionText,
+                          );
+                    },
+              onOpenInstructionActions:
+                  selectedInstructionText.isEmpty || isInstructionPatching
                   ? null
                   : () {
                       openDetailActions(
-                        buildCopyOnlyActions(
-                          title: context.l10n.memoryToolDebugActionCopyInstruction,
-                          value: selectedInstructionText,
-                          icon: Icons.copy_all_rounded,
+                        buildInstructionActions(
+                          address: selectedWriterGroup!.pc,
+                          currentValue: selectedInstructionText,
                         ),
                       );
                     },
-              onOpenRewriteActions: selectedTransition == null
+              onOpenHitChangeActions: selectedHitChangeInfo == null
                   ? null
                   : () {
-                      openDetailActions(
-                        buildCopyOnlyActions(
-                          title: context.l10n.memoryToolDebugActionCopyRewrite,
-                          value: selectedTransition.summary,
-                          icon: Icons.copy_all_rounded,
-                        ),
-                      );
+                      openDetailActions(buildHitChangeActions());
                     },
               onSelectHit: (hit) {
                 selectedHitKey.value = buildMemoryToolDebugHitKey(hit);
@@ -651,48 +844,48 @@ class MemoryToolDebugTab extends HookConsumerWidget {
                     ],
                   )
                 : useLandscapeWorkbench
-                    ? Row(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: <Widget>[
-                          Expanded(
-                            flex: constraints.maxWidth >= 960 ? 8 : 9,
-                            child: breakpointTab,
-                          ),
-                          const _MemoryToolDebugPanelDivider(vertical: true),
-                          Expanded(
-                            flex: constraints.maxWidth >= 960 ? 14 : 12,
-                            child: _MemoryToolDebugLandscapeDetailWorkbench(
-                              controller: landscapeDetailTabController,
-                              writersTab: writersTab,
-                              detailTab: detailTab,
-                            ),
-                          ),
-                        ],
-                      )
-                    : isMedium
-                        ? Row(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: <Widget>[
-                              Expanded(flex: 9, child: breakpointTab),
-                              const _MemoryToolDebugPanelDivider(vertical: true),
-                              Expanded(
-                                flex: 12,
-                                child: Column(
-                                  children: <Widget>[
-                                    Expanded(child: writersTab),
-                                    const _MemoryToolDebugPanelDivider(vertical: false),
-                                    Expanded(child: detailTab),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          )
-                        : _MemoryToolDebugCompactWorkbench(
-                            controller: compactTabController,
-                            breakpointTab: breakpointTab,
-                            writersTab: writersTab,
-                            detailTab: detailTab,
-                          );
+                ? Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      Expanded(
+                        flex: constraints.maxWidth >= 960 ? 8 : 9,
+                        child: breakpointTab,
+                      ),
+                      const _MemoryToolDebugPanelDivider(vertical: true),
+                      Expanded(
+                        flex: constraints.maxWidth >= 960 ? 14 : 12,
+                        child: _MemoryToolDebugLandscapeDetailWorkbench(
+                          controller: landscapeDetailTabController,
+                          writersTab: writersTab,
+                          detailTab: detailTab,
+                        ),
+                      ),
+                    ],
+                  )
+                : isMedium
+                ? Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      Expanded(flex: 9, child: breakpointTab),
+                      const _MemoryToolDebugPanelDivider(vertical: true),
+                      Expanded(
+                        flex: 12,
+                        child: Column(
+                          children: <Widget>[
+                            Expanded(child: writersTab),
+                            const _MemoryToolDebugPanelDivider(vertical: false),
+                            Expanded(child: detailTab),
+                          ],
+                        ),
+                      ),
+                    ],
+                  )
+                : _MemoryToolDebugCompactWorkbench(
+                    controller: compactTabController,
+                    breakpointTab: breakpointTab,
+                    writersTab: writersTab,
+                    detailTab: detailTab,
+                  );
 
             return Padding(
               padding: EdgeInsets.all(isShortHeight ? 8.r : 12.r),
@@ -702,7 +895,9 @@ class MemoryToolDebugTab extends HookConsumerWidget {
                     actions: <MemoryToolResultSelectionActionData>[
                       MemoryToolResultSelectionActionData(
                         icon: Icons.refresh_rounded,
-                        onTap: breakpointActionState.isLoading ? null : refreshAll,
+                        onTap: breakpointActionState.isLoading
+                            ? null
+                            : refreshAll,
                       ),
                       MemoryToolResultSelectionActionData(
                         icon: Icons.play_arrow_rounded,
@@ -710,7 +905,9 @@ class MemoryToolDebugTab extends HookConsumerWidget {
                             ? null
                             : () async {
                                 await ref
-                                    .read(memoryBreakpointActionProvider.notifier)
+                                    .read(
+                                      memoryBreakpointActionProvider.notifier,
+                                    )
                                     .resumeAfterBreakpoint(pid: pid);
                               },
                       ),
@@ -720,7 +917,9 @@ class MemoryToolDebugTab extends HookConsumerWidget {
                             ? null
                             : () async {
                                 await ref
-                                    .read(memoryBreakpointActionProvider.notifier)
+                                    .read(
+                                      memoryBreakpointActionProvider.notifier,
+                                    )
                                     .clearMemoryBreakpointHits(pid: pid);
                               },
                       ),
@@ -730,7 +929,9 @@ class MemoryToolDebugTab extends HookConsumerWidget {
                   Expanded(
                     child: DecoratedBox(
                       decoration: BoxDecoration(
-                        color: context.colorScheme.surface.withValues(alpha: 0.84),
+                        color: context.colorScheme.surface.withValues(
+                          alpha: 0.84,
+                        ),
                         borderRadius: BorderRadius.circular(14.r),
                         border: Border.all(
                           color: context.colorScheme.outlineVariant.withValues(
@@ -800,9 +1001,31 @@ class MemoryToolDebugTab extends HookConsumerWidget {
               },
             ),
           ),
+        if (activeInstructionEditor.value case final editor?)
+          Positioned.fill(
+            child: MemoryToolDebugInstructionEditorDialog(
+              initialValue: editor.currentValue,
+              onSave: (value) async {
+                await saveInstructionEdit(editor: editor, value: value);
+              },
+              onClose: () {
+                activeInstructionEditor.value = null;
+              },
+            ),
+          ),
       ],
     );
   }
+}
+
+class _MemoryToolDebugInstructionEditorState {
+  const _MemoryToolDebugInstructionEditorState({
+    required this.address,
+    required this.currentValue,
+  });
+
+  final int address;
+  final String currentValue;
 }
 
 class _MemoryToolDebugCompactWorkbench extends StatelessWidget {
@@ -845,11 +1068,7 @@ class _MemoryToolDebugCompactWorkbench extends StatelessWidget {
         Expanded(
           child: TabBarView(
             controller: controller,
-            children: <Widget>[
-              breakpointTab,
-              writersTab,
-              detailTab,
-            ],
+            children: <Widget>[breakpointTab, writersTab, detailTab],
           ),
         ),
       ],
@@ -875,7 +1094,9 @@ class _MemoryToolDebugLandscapeDetailWorkbench extends StatelessWidget {
         Container(
           width: double.infinity,
           decoration: BoxDecoration(
-            color: context.colorScheme.surfaceContainerHighest.withValues(alpha: 0.34),
+            color: context.colorScheme.surfaceContainerHighest.withValues(
+              alpha: 0.34,
+            ),
             borderRadius: BorderRadius.circular(10.r),
           ),
           child: TabBar(
@@ -901,10 +1122,7 @@ class _MemoryToolDebugLandscapeDetailWorkbench extends StatelessWidget {
         Expanded(
           child: TabBarView(
             controller: controller,
-            children: <Widget>[
-              writersTab,
-              detailTab,
-            ],
+            children: <Widget>[writersTab, detailTab],
           ),
         ),
       ],

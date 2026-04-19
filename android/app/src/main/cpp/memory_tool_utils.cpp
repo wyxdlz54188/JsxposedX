@@ -112,6 +112,32 @@ std::string HexEncode(const std::vector<uint8_t>& bytes) {
     return stream.str();
 }
 
+bool HexDecode(const std::string& value, std::vector<uint8_t>* bytes) {
+    if (bytes == nullptr) {
+        return false;
+    }
+
+    bytes->clear();
+    if (value.empty() || value.size() % 2 != 0) {
+        return false;
+    }
+
+    bytes->reserve(value.size() / 2);
+    for (size_t index = 0; index < value.size(); index += 2) {
+        const char high = value[index];
+        const char low = value[index + 1];
+        if (!std::isxdigit(static_cast<unsigned char>(high)) ||
+            !std::isxdigit(static_cast<unsigned char>(low))) {
+            bytes->clear();
+            return false;
+        }
+
+        const std::string token = value.substr(index, 2);
+        bytes->push_back(static_cast<uint8_t>(std::stoul(token, nullptr, 16)));
+    }
+    return true;
+}
+
 std::string JsonEscape(const std::string& value) {
     std::string escaped;
     escaped.reserve(value.size() * 2);

@@ -213,6 +213,17 @@ void MemoryToolJniBridge::ResumeAfterBreakpoint(jlong pid) {
     MemoryToolEngine::Instance().ResumeAfterBreakpoint(static_cast<int>(pid));
 }
 
+jstring MemoryToolJniBridge::PatchMemoryInstructionJson(JNIEnv* env,
+                                                        jlong pid,
+                                                        jlong address,
+                                                        jstring input_text) {
+    const auto result = MemoryToolEngine::Instance().PatchMemoryInstruction(
+        static_cast<int>(pid),
+        static_cast<uint64_t>(address),
+        JStringToUtf8(env, input_text));
+    return env->NewStringUTF(protocol::SerializeInstructionPatchResult(result).c_str());
+}
+
 jstring MemoryToolJniBridge::ReadMemoryValuesJson(JNIEnv* env,
                                                   jlongArray pids,
                                                   jlongArray addresses,
@@ -720,6 +731,25 @@ Java_com_jsxposed_x_core_bridge_memory_1tool_1native_MemoryToolHelperNativeBridg
         memory_tool::MemoryToolJniBridge::ResumeAfterBreakpoint(pid);
     } catch (const std::exception& exception) {
         memory_tool::ThrowRuntimeException(env, exception.what());
+    }
+}
+
+extern "C" JNIEXPORT jstring JNICALL
+Java_com_jsxposed_x_core_bridge_memory_1tool_1native_MemoryToolHelperNativeBridge_patchMemoryInstructionJson(
+        JNIEnv* env,
+        jobject /* thiz */,
+        jlong pid,
+        jlong address,
+        jstring input_text) {
+    try {
+        return memory_tool::MemoryToolJniBridge::PatchMemoryInstructionJson(
+            env,
+            pid,
+            address,
+            input_text);
+    } catch (const std::exception& exception) {
+        memory_tool::ThrowRuntimeException(env, exception.what());
+        return nullptr;
     }
 }
 

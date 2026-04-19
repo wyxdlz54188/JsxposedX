@@ -34,6 +34,13 @@ class MemoryActionRepositoryImpl implements MemoryActionRepository {
   }
 
   @override
+  Future<MemoryInstructionPatchResult> patchMemoryInstruction({
+    required MemoryInstructionPatchRequest request,
+  }) async {
+    return await _dataSource.patchMemoryInstruction(request: request);
+  }
+
+  @override
   Future<void> setMemoryFreeze({required MemoryFreezeRequest request}) async {
     await _dataSource.setMemoryFreeze(request: request);
   }

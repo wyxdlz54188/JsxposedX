@@ -309,6 +309,19 @@ std::string SerializeMemoryBreakpointHits(const std::vector<MemoryBreakpointHitV
     return stream.str();
 }
 
+std::string SerializeInstructionPatchResult(const InstructionPatchResultView& result) {
+    std::ostringstream stream;
+    stream << '{'
+           << "\"address\":" << result.address << ','
+           << "\"architecture\":\"" << utils::JsonEscape(result.architecture) << "\","
+           << "\"instructionSize\":" << result.instruction_size << ','
+           << "\"beforeBytesHex\":\"" << utils::HexEncode(result.before_bytes) << "\","
+           << "\"afterBytesHex\":\"" << utils::HexEncode(result.after_bytes) << "\","
+           << "\"instructionText\":\"" << utils::JsonEscape(result.instruction_text) << "\""
+           << '}';
+    return stream.str();
+}
+
 std::string SerializeMemoryValuePreviews(const std::vector<MemoryValuePreview>& previews) {
     std::ostringstream stream;
     stream << '[';

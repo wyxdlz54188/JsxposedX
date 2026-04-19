@@ -9,6 +9,7 @@
 #include <utility>
 
 #include "memory_tool_reader.h"
+#include "memory_tool_instruction.h"
 #include "memory_tool_regions.h"
 #include "memory_tool_value.h"
 
@@ -902,6 +903,33 @@ void MemoryToolEngine::ClearMemoryBreakpointHits(int pid) {
 
 void MemoryToolEngine::ResumeAfterBreakpoint(int pid) {
     breakpoint_controller_.ResumeAfterBreakpoint(pid);
+}
+
+InstructionPatchResultView MemoryToolEngine::PatchMemoryInstruction(
+    int pid,
+    uint64_t address,
+    const std::string& input_text) {
+    if (pid <= 0) {
+        throw std::runtime_error("Invalid process id.");
+    }
+    if (address == 0) {
+        throw std::runtime_error("Invalid instruction address.");
+    }
+
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        if (!IsProcessAlive(pid)) {
+            if (session_.pid == pid) {
+                session_.Clear();
+            }
+            if (pointer_session_.pid == pid) {
+                pointer_session_.Clear();
+            }
+            throw std::runtime_error("Target process is no longer available.");
+        }
+    }
+
+    return PatchMemoryInstructionAtAddress(pid, address, input_text);
 }
 
 std::vector<MemoryValuePreview> MemoryToolEngine::ReadMemoryValues(

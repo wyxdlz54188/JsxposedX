@@ -28,6 +28,7 @@ class MemoryToolDaemonClient(
         private const val METHOD_GET_MEMORY_BREAKPOINT_HITS = "getMemoryBreakpointHits"
         private const val METHOD_CLEAR_MEMORY_BREAKPOINT_HITS = "clearMemoryBreakpointHits"
         private const val METHOD_RESUME_AFTER_BREAKPOINT = "resumeAfterBreakpoint"
+        private const val METHOD_PATCH_MEMORY_INSTRUCTION = "patchMemoryInstruction"
         private const val METHOD_READ_MEMORY_VALUES = "readMemoryValues"
         private const val METHOD_WRITE_MEMORY_VALUE = "writeMemoryValue"
         private const val METHOD_SET_MEMORY_FREEZE = "setMemoryFreeze"
@@ -503,6 +504,26 @@ class MemoryToolDaemonClient(
             JSONObject().apply {
                 put("pid", pid)
             }
+        )
+    }
+
+    fun patchMemoryInstruction(request: MemoryInstructionPatchRequest): MemoryInstructionPatchResult {
+        helperManager.ensureDaemon()
+        val item = sendOrThrow(
+            METHOD_PATCH_MEMORY_INSTRUCTION,
+            JSONObject().apply {
+                put("pid", request.pid)
+                put("address", request.address)
+                put("instruction", request.instruction)
+            }
+        ).getJSONObject("result")
+        return MemoryInstructionPatchResult(
+            address = item.getLong("address"),
+            architecture = item.optString("architecture"),
+            instructionSize = item.optLong("instructionSize"),
+            beforeBytes = decodeHex(item.optString("beforeBytesHex")),
+            afterBytes = decodeHex(item.optString("afterBytesHex")),
+            instructionText = item.optString("instructionText")
         )
     }
 

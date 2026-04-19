@@ -47,6 +47,7 @@ if(EXISTS ${LIEF_LIB})
         memory_tool_breakpoint.cpp
         memory_tool_jni.cpp
         memory_tool_engine.cpp
+        memory_tool_instruction.cpp
         memory_tool_protocol.cpp
         memory_tool_reader.cpp
         memory_tool_regions.cpp

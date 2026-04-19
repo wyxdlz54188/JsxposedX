@@ -23,6 +23,12 @@ class MemoryActionDatasource {
     await _native.writeMemoryValue(request);
   }
 
+  Future<MemoryInstructionPatchResult> patchMemoryInstruction({
+    required MemoryInstructionPatchRequest request,
+  }) async {
+    return await _native.patchMemoryInstruction(request);
+  }
+
   Future<void> setMemoryFreeze({required MemoryFreezeRequest request}) async {
     await _native.setMemoryFreeze(request);
   }

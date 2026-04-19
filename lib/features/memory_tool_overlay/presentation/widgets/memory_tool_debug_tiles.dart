@@ -84,13 +84,17 @@ class MemoryToolDebugDetailInfoTile extends StatelessWidget {
     required this.title,
     required this.value,
     this.monospace = false,
+    this.onTap,
     this.onLongPress,
+    this.trailing,
   });
 
   final String title;
   final String value;
   final bool monospace;
+  final VoidCallback? onTap;
   final VoidCallback? onLongPress;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -99,6 +103,7 @@ class MemoryToolDebugDetailInfoTile extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
+          onTap: onTap,
           onLongPress: onLongPress,
           borderRadius: BorderRadius.circular(14.r),
           child: AnimatedContainer(
@@ -114,12 +119,23 @@ class MemoryToolDebugDetailInfoTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Text(
-                  title,
-                  style: context.textTheme.labelMedium?.copyWith(
-                    color: context.colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w700,
-                  ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: context.textTheme.labelMedium?.copyWith(
+                          color: context.colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    if (trailing != null) ...<Widget>[
+                      SizedBox(width: 8.r),
+                      trailing!,
+                    ],
+                  ],
                 ),
                 SizedBox(height: 4.r),
                 Text(

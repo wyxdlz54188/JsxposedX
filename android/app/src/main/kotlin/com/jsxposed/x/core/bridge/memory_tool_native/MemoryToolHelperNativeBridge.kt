@@ -56,6 +56,12 @@ object MemoryToolHelperNativeBridge {
 
     external fun resumeAfterBreakpoint(pid: Long)
 
+    external fun patchMemoryInstructionJson(
+        pid: Long,
+        address: Long,
+        inputText: String
+    ): String
+
     external fun readMemoryValuesJson(
         pids: LongArray,
         addresses: LongArray,

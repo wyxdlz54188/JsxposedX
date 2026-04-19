@@ -1283,6 +1283,83 @@ data class PointerScanTaskState (
 
   override fun hashCode(): Int = toList().hashCode()
 }
+
+/** Generated class from Pigeon that represents data sent in messages. */
+data class MemoryInstructionPatchRequest (
+  val pid: Long,
+  val address: Long,
+  val instruction: String
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): MemoryInstructionPatchRequest {
+      val pid = pigeonVar_list[0] as Long
+      val address = pigeonVar_list[1] as Long
+      val instruction = pigeonVar_list[2] as String
+      return MemoryInstructionPatchRequest(pid, address, instruction)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      pid,
+      address,
+      instruction,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is MemoryInstructionPatchRequest) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return MemoryToolNativePigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/** Generated class from Pigeon that represents data sent in messages. */
+data class MemoryInstructionPatchResult (
+  val address: Long,
+  val architecture: String,
+  val instructionSize: Long,
+  val beforeBytes: ByteArray,
+  val afterBytes: ByteArray,
+  val instructionText: String
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): MemoryInstructionPatchResult {
+      val address = pigeonVar_list[0] as Long
+      val architecture = pigeonVar_list[1] as String
+      val instructionSize = pigeonVar_list[2] as Long
+      val beforeBytes = pigeonVar_list[3] as ByteArray
+      val afterBytes = pigeonVar_list[4] as ByteArray
+      val instructionText = pigeonVar_list[5] as String
+      return MemoryInstructionPatchResult(address, architecture, instructionSize, beforeBytes, afterBytes, instructionText)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      address,
+      architecture,
+      instructionSize,
+      beforeBytes,
+      afterBytes,
+      instructionText,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is MemoryInstructionPatchResult) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return MemoryToolNativePigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
 private open class MemoryToolNativePigeonCodec : StandardMessageCodec() {
   override fun readValueOfType(type: Byte, buffer: ByteBuffer): Any? {
     return when (type) {
@@ -1436,6 +1513,16 @@ private open class MemoryToolNativePigeonCodec : StandardMessageCodec() {
           PointerScanTaskState.fromList(it)
         }
       }
+      159.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          MemoryInstructionPatchRequest.fromList(it)
+        }
+      }
+      160.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          MemoryInstructionPatchResult.fromList(it)
+        }
+      }
       else -> super.readValueOfType(type, buffer)
     }
   }
@@ -1561,6 +1648,14 @@ private open class MemoryToolNativePigeonCodec : StandardMessageCodec() {
         stream.write(158)
         writeValue(stream, value.toList())
       }
+      is MemoryInstructionPatchRequest -> {
+        stream.write(159)
+        writeValue(stream, value.toList())
+      }
+      is MemoryInstructionPatchResult -> {
+        stream.write(160)
+        writeValue(stream, value.toList())
+      }
       else -> super.writeValue(stream, value)
     }
   }
@@ -1591,6 +1686,7 @@ interface MemoryToolNative {
   fun resumeAfterBreakpoint(pid: Long, callback: (Result<Unit>) -> Unit)
   fun readMemoryValues(requests: List<MemoryReadRequest>, callback: (Result<List<MemoryValuePreview>>) -> Unit)
   fun writeMemoryValue(request: MemoryWriteRequest, callback: (Result<Unit>) -> Unit)
+  fun patchMemoryInstruction(request: MemoryInstructionPatchRequest, callback: (Result<MemoryInstructionPatchResult>) -> Unit)
   fun setMemoryFreeze(request: MemoryFreezeRequest, callback: (Result<Unit>) -> Unit)
   fun getFrozenMemoryValues(callback: (Result<List<FrozenMemoryValue>>) -> Unit)
   fun isProcessPaused(pid: Long, callback: (Result<Boolean>) -> Unit)
@@ -2039,6 +2135,26 @@ interface MemoryToolNative {
                 reply.reply(MemoryToolNativePigeonUtils.wrapError(error))
               } else {
                 reply.reply(MemoryToolNativePigeonUtils.wrapResult(null))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.JsxposedX.MemoryToolNative.patchMemoryInstruction$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val requestArg = args[0] as MemoryInstructionPatchRequest
+            api.patchMemoryInstruction(requestArg) { result: Result<MemoryInstructionPatchResult> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(MemoryToolNativePigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(MemoryToolNativePigeonUtils.wrapResult(data))
               }
             }
           }
