@@ -53,7 +53,7 @@ class MemoryToolSearchResultTile extends StatelessWidget {
           duration: const Duration(milliseconds: 160),
           decoration: BoxDecoration(
             color: isSelected
-                ? context.colorScheme.primaryContainer.withValues(alpha: 0.72)
+                ? context.colorScheme.primaryContainer.withValues(alpha: 0.3)
                 : context.colorScheme.surface.withValues(alpha: 0.72),
             borderRadius: BorderRadius.circular(14.r),
             border: Border.all(
