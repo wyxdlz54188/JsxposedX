@@ -21,7 +21,7 @@ class MemoryToolDebugTab extends HookConsumerWidget {
     final pid = selectedProcess?.pid;
     final selectedBreakpointId = ref.watch(memoryBreakpointSelectedIdProvider);
     final breakpointActionState = ref.watch(memoryBreakpointActionProvider);
-    final selectedHitKey = useState<String?>(null);
+    final selectedWriterKey = useState<String?>(null);
     final compactTabController = useTabController(initialLength: 3);
     final landscapeDetailTabController = useTabController(initialLength: 2);
     final stateAsync = pid == null
@@ -46,7 +46,7 @@ class MemoryToolDebugTab extends HookConsumerWidget {
     final allHits = hitsAsync.asData?.value ?? const <MemoryBreakpointHit>[];
 
     useEffect(() {
-      selectedHitKey.value = null;
+      selectedWriterKey.value = null;
       compactTabController.index = 0;
       landscapeDetailTabController.index = 0;
       return null;
@@ -98,32 +98,33 @@ class MemoryToolDebugTab extends HookConsumerWidget {
         : allHits
               .where((hit) => hit.breakpointId == selectedBreakpoint.id)
               .toList(growable: false);
+    final writerGroups = _buildWriterGroups(hits);
 
     useEffect(() {
       if (pid == null) {
         return null;
       }
-      final currentKey = selectedHitKey.value;
-      if (hits.isEmpty) {
+      final currentKey = selectedWriterKey.value;
+      if (writerGroups.isEmpty) {
         if (currentKey != null) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            selectedHitKey.value = null;
+            selectedWriterKey.value = null;
           });
         }
         return null;
       }
-      final hasSelection = hits.any((hit) => _buildHitKey(hit) == currentKey);
+      final hasSelection = writerGroups.any((group) => group.key == currentKey);
       if (!hasSelection) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          selectedHitKey.value = _buildHitKey(hits.first);
+          selectedWriterKey.value = writerGroups.first.key;
         });
       }
       return null;
-    }, [pid, selectedBreakpoint?.id, hits, selectedHitKey.value]);
+    }, [pid, selectedBreakpoint?.id, writerGroups, selectedWriterKey.value]);
 
-    final selectedHit = _resolveSelectedHit(
-      hits: hits,
-      selectedHitKey: selectedHitKey.value,
+    final selectedWriterGroup = _resolveSelectedWriterGroup(
+      groups: writerGroups,
+      selectedWriterKey: selectedWriterKey.value,
     );
     final state = stateAsync.asData?.value;
     final isPaused = state?.isProcessPaused ?? false;
@@ -186,17 +187,13 @@ class MemoryToolDebugTab extends HookConsumerWidget {
           ),
         );
 
-        final hitPanel = _DebugSection(
-          title: context.isZh ? '命中记录' : 'Hit Records',
-          child: _HitList(
-            hitsAsync: hitsAsync,
-            selectedBreakpointId: selectedBreakpoint?.id,
-            selectedHitKey: selectedHitKey.value,
-            onSelectHit: (hit) {
-              ref
-                  .read(memoryBreakpointSelectedIdProvider.notifier)
-                  .set(hit.breakpointId);
-              selectedHitKey.value = _buildHitKey(hit);
+        final writerPanel = _DebugSection(
+          title: context.isZh ? '写入源' : 'Writers',
+          child: _WriterGroupList(
+            groups: writerGroups,
+            selectedWriterKey: selectedWriterKey.value,
+            onSelectWriter: (group) {
+              selectedWriterKey.value = group.key;
               if (useLandscapeWorkbench) {
                 landscapeDetailTabController.animateTo(1);
               } else if (!isMedium) {
@@ -207,9 +204,9 @@ class MemoryToolDebugTab extends HookConsumerWidget {
         );
 
         final detailPanel = _DebugSection(
-          title: context.isZh ? '命中详情' : 'Hit Detail',
-          child: _HitDetail(
-            hit: selectedHit,
+          title: context.isZh ? '详情' : 'Detail',
+          child: _WriterDetail(
+            group: selectedWriterGroup,
             breakpoint: selectedBreakpoint,
           ),
         );
@@ -220,7 +217,7 @@ class MemoryToolDebugTab extends HookConsumerWidget {
                 children: <Widget>[
                   Expanded(flex: 9, child: breakpointPanel),
                   _PanelDivider(vertical: true),
-                  Expanded(flex: 10, child: hitPanel),
+                  Expanded(flex: 10, child: writerPanel),
                   _PanelDivider(vertical: true),
                   Expanded(flex: 11, child: detailPanel),
                 ],
@@ -238,36 +235,36 @@ class MemoryToolDebugTab extends HookConsumerWidget {
                         flex: constraints.maxWidth >= 960 ? 14 : 12,
                         child: _LandscapeDetailWorkbench(
                           controller: landscapeDetailTabController,
-                          hitPanel: hitPanel,
+                          writerPanel: writerPanel,
                           detailPanel: detailPanel,
                         ),
                       ),
                     ],
                   )
-            : isMedium
-                ? Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: <Widget>[
-                      Expanded(flex: 9, child: breakpointPanel),
-                      _PanelDivider(vertical: true),
-                      Expanded(
-                        flex: 12,
-                        child: Column(
-                          children: <Widget>[
-                            Expanded(child: hitPanel),
-                            _PanelDivider(vertical: false),
-                            Expanded(child: detailPanel),
-                          ],
-                        ),
-                      ),
-                    ],
-                  )
-                : _CompactWorkbench(
-                    controller: compactTabController,
-                    breakpointPanel: breakpointPanel,
-                    hitPanel: hitPanel,
-                    detailPanel: detailPanel,
-                  );
+                : isMedium
+                    ? Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: <Widget>[
+                          Expanded(flex: 9, child: breakpointPanel),
+                          _PanelDivider(vertical: true),
+                          Expanded(
+                            flex: 12,
+                            child: Column(
+                              children: <Widget>[
+                                Expanded(child: writerPanel),
+                                _PanelDivider(vertical: false),
+                                Expanded(child: detailPanel),
+                              ],
+                            ),
+                          ),
+                        ],
+                      )
+                    : _CompactWorkbench(
+                        controller: compactTabController,
+                        breakpointPanel: breakpointPanel,
+                        writerPanel: writerPanel,
+                        detailPanel: detailPanel,
+                      );
 
         return Padding(
           padding: EdgeInsets.all(isShortHeight ? 8.r : 12.r),
@@ -324,6 +321,7 @@ class MemoryToolDebugTab extends HookConsumerWidget {
                   selectedBreakpoint: selectedBreakpoint,
                   hitCount: hits.length,
                   breakpointCount: breakpoints.length,
+                  writerCount: writerGroups.length,
                 ),
               ],
             ],
@@ -338,13 +336,13 @@ class _CompactWorkbench extends StatelessWidget {
   const _CompactWorkbench({
     required this.controller,
     required this.breakpointPanel,
-    required this.hitPanel,
+    required this.writerPanel,
     required this.detailPanel,
   });
 
   final TabController controller;
   final Widget breakpointPanel;
-  final Widget hitPanel;
+  final Widget writerPanel;
   final Widget detailPanel;
 
   @override
@@ -366,7 +364,7 @@ class _CompactWorkbench extends StatelessWidget {
           ),
           tabs: <Widget>[
             Tab(text: context.isZh ? '断点' : 'Breakpoints'),
-            Tab(text: context.isZh ? '命中' : 'Hits'),
+            Tab(text: context.isZh ? '写入源' : 'Writers'),
             Tab(text: context.isZh ? '详情' : 'Detail'),
           ],
         ),
@@ -376,7 +374,7 @@ class _CompactWorkbench extends StatelessWidget {
             controller: controller,
             children: <Widget>[
               breakpointPanel,
-              hitPanel,
+              writerPanel,
               detailPanel,
             ],
           ),
@@ -389,12 +387,12 @@ class _CompactWorkbench extends StatelessWidget {
 class _LandscapeDetailWorkbench extends StatelessWidget {
   const _LandscapeDetailWorkbench({
     required this.controller,
-    required this.hitPanel,
+    required this.writerPanel,
     required this.detailPanel,
   });
 
   final TabController controller;
-  final Widget hitPanel;
+  final Widget writerPanel;
   final Widget detailPanel;
 
   @override
@@ -421,8 +419,8 @@ class _LandscapeDetailWorkbench extends StatelessWidget {
               fontWeight: FontWeight.w800,
             ),
             tabs: <Widget>[
-              Tab(text: context.isZh ? '命中记录' : 'Hits'),
-              Tab(text: context.isZh ? '命中详情' : 'Detail'),
+              Tab(text: context.isZh ? '写入源' : 'Writers'),
+              Tab(text: context.isZh ? '详情' : 'Detail'),
             ],
           ),
         ),
@@ -431,7 +429,7 @@ class _LandscapeDetailWorkbench extends StatelessWidget {
           child: TabBarView(
             controller: controller,
             children: <Widget>[
-              hitPanel,
+              writerPanel,
               detailPanel,
             ],
           ),
@@ -603,133 +601,116 @@ class _BreakpointList extends StatelessWidget {
   }
 }
 
-class _HitList extends StatelessWidget {
-  const _HitList({
-    required this.hitsAsync,
-    required this.selectedBreakpointId,
-    required this.selectedHitKey,
-    required this.onSelectHit,
+class _WriterGroupList extends StatelessWidget {
+  const _WriterGroupList({
+    required this.groups,
+    required this.selectedWriterKey,
+    required this.onSelectWriter,
   });
 
-  final AsyncValue<List<MemoryBreakpointHit>> hitsAsync;
-  final String? selectedBreakpointId;
-  final String? selectedHitKey;
-  final ValueChanged<MemoryBreakpointHit> onSelectHit;
+  final List<_WriterGroup> groups;
+  final String? selectedWriterKey;
+  final ValueChanged<_WriterGroup> onSelectWriter;
 
   @override
   Widget build(BuildContext context) {
-    return hitsAsync.when(
-      data: (allHits) {
-        if (selectedBreakpointId == null) {
-          return _DebugEmptyState(
-            message: context.isZh ? '先选择一个断点' : 'Select a breakpoint first',
-          );
-        }
-        final hits = allHits
-            .where((hit) => hit.breakpointId == selectedBreakpointId)
-            .toList(growable: false);
-        if (hits.isEmpty) {
-          return _DebugEmptyState(
-            message: context.isZh ? '这个断点还没有命中' : 'No hits for the selected breakpoint',
-          );
-        }
-        return ListView.separated(
-          padding: EdgeInsets.zero,
-          itemCount: hits.length,
-          separatorBuilder: (_, _) => SizedBox(height: 6.r),
-          itemBuilder: (context, index) {
-            final hit = hits[index];
-            final isSelected = _buildHitKey(hit) == selectedHitKey;
-            return _ListItemShell(
-              selected: isSelected,
-              onTap: () {
-                onSelectHit(hit);
-              },
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+    if (groups.isEmpty) {
+      return _DebugEmptyState(
+        message: context.isZh ? '这个断点还没有命中' : 'No writer groups for the selected breakpoint',
+      );
+    }
+    return ListView.separated(
+      padding: EdgeInsets.zero,
+      itemCount: groups.length,
+      separatorBuilder: (_, _) => SizedBox(height: 6.r),
+      itemBuilder: (context, index) {
+        final group = groups[index];
+        final isSelected = group.key == selectedWriterKey;
+        return _ListItemShell(
+          selected: isSelected,
+          onTap: () {
+            onSelectWriter(group);
+          },
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Row(
                 children: <Widget>[
-                  Row(
-                    children: <Widget>[
-                      Expanded(
-                        child: Text(
-                          _formatTimestamp(hit.timestampMillis),
-                          style: context.textTheme.bodySmall?.copyWith(
-                            color: context.colorScheme.onSurfaceVariant,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                      _InlineChip(text: 'TID ${hit.threadId}'),
-                    ],
-                  ),
-                  SizedBox(height: 4.r),
-                  Text(
-                    'PC 0x${hit.pc.toRadixString(16).toUpperCase()}',
-                    style: context.textTheme.bodyMedium?.copyWith(
-                      fontFamily: 'monospace',
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  SizedBox(height: 3.r),
-                  if (hit.instructionText.isNotEmpty) ...<Widget>[
-                    Text(
-                      _formatInstruction(hit.instructionText),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                  Expanded(
+                    child: Text(
+                      _formatTimestamp(group.latestTimestamp),
                       style: context.textTheme.bodySmall?.copyWith(
-                        fontFamily: 'monospace',
+                        color: context.colorScheme.onSurfaceVariant,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    SizedBox(height: 3.r),
-                  ],
-                  Text(
-                    '${hit.moduleName.isEmpty ? '[anonymous]' : hit.moduleName}+0x${hit.moduleOffset.toRadixString(16).toUpperCase()}',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: context.textTheme.bodySmall?.copyWith(
-                      color: context.colorScheme.onSurfaceVariant,
-                    ),
+                  ),
+                  _InlineChip(
+                    text: '${group.threadCount} ${context.isZh ? '线程' : 'thr'}',
                   ),
                 ],
               ),
-            );
-          },
+              SizedBox(height: 4.r),
+              Text(
+                'PC 0x${group.pc.toRadixString(16).toUpperCase()}',
+                style: context.textTheme.bodyMedium?.copyWith(
+                  fontFamily: 'monospace',
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              if (group.instructionText.isNotEmpty) ...<Widget>[
+                SizedBox(height: 3.r),
+                Text(
+                  _formatInstruction(group.instructionText),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: context.textTheme.bodySmall?.copyWith(
+                    fontFamily: 'monospace',
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+              SizedBox(height: 3.r),
+              Text(
+                '${group.moduleName.isEmpty ? '[anonymous]' : group.moduleName}+0x${group.moduleOffset.toRadixString(16).toUpperCase()}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: context.textTheme.bodySmall?.copyWith(
+                  color: context.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              SizedBox(height: 6.r),
+              Wrap(
+                spacing: 6.r,
+                runSpacing: 6.r,
+                children: <Widget>[
+                  _InlineChip(
+                    text: '${group.hitCount}${context.isZh ? ' 次命中' : ' hits'}',
+                    active: true,
+                  ),
+                  if (group.topTransition != null)
+                    _InlineChip(text: group.topTransition!.summary),
+                ],
+              ),
+            ],
+          ),
         );
       },
-      error: (error, _) => _DebugEmptyState(message: error.toString()),
-      loading: () => const Center(child: CircularProgressIndicator.adaptive()),
     );
-  }
-
-  String _hex(Uint8List bytes) {
-    if (bytes.isEmpty) {
-      return '--';
-    }
-    return bytes
-        .map((value) => value.toRadixString(16).padLeft(2, '0').toUpperCase())
-        .join(' ');
-  }
-
-  String _formatInstruction(String instruction) {
-    final normalized = instruction.trim().replaceAll(RegExp(r'\s+'), ' ');
-    return normalized;
   }
 }
 
-class _HitDetail extends StatelessWidget {
-  const _HitDetail({required this.hit, required this.breakpoint});
+class _WriterDetail extends StatelessWidget {
+  const _WriterDetail({required this.group, required this.breakpoint});
 
-  final MemoryBreakpointHit? hit;
+  final _WriterGroup? group;
   final MemoryBreakpoint? breakpoint;
 
   @override
   Widget build(BuildContext context) {
-    if (hit == null) {
+    if (group == null) {
       return _DebugEmptyState(
-        message: context.isZh
-            ? '选择一条命中记录查看详情'
-            : 'Select a hit record to inspect details',
+        message: context.isZh ? '选择一个写入源查看详情' : 'Select a writer group to inspect details',
       );
     }
 
@@ -742,45 +723,39 @@ class _HitDetail extends StatelessWidget {
             runSpacing: 6.r,
             children: <Widget>[
               _InlineChip(
-                text: 'PC 0x${hit!.pc.toRadixString(16).toUpperCase()}',
+                text: 'PC 0x${group!.pc.toRadixString(16).toUpperCase()}',
               ),
-              _InlineChip(text: 'TID ${hit!.threadId}'),
-              _InlineChip(text: _formatTimestamp(hit!.timestampMillis)),
-              if (breakpoint != null)
-                _InlineChip(text: '${breakpoint!.length}B'),
+              _InlineChip(
+                text: '${group!.threadCount} ${context.isZh ? '线程' : 'threads'}',
+              ),
+              _InlineChip(
+                text: '${group!.hitCount} ${context.isZh ? '次命中' : 'hits'}',
+              ),
+              _InlineChip(text: _formatTimestamp(group!.latestTimestamp)),
             ],
           ),
           SizedBox(height: 10.r),
           _DetailBlock(
             title: context.isZh ? '模块偏移' : 'Module Offset',
             value:
-                '${hit!.moduleName.isEmpty ? '[anonymous]' : hit!.moduleName}+0x${hit!.moduleOffset.toRadixString(16).toUpperCase()}',
+                '${group!.moduleName.isEmpty ? '[anonymous]' : group!.moduleName}+0x${group!.moduleOffset.toRadixString(16).toUpperCase()}',
             monospace: true,
           ),
-          SizedBox(height: 8.r),
-          _DetailBlock(
-            title: context.isZh ? '命中地址' : 'Hit Address',
-            value: '0x${hit!.address.toRadixString(16).toUpperCase()}',
-            monospace: true,
-          ),
-          SizedBox(height: 8.r),
-          _DetailBlock(
-            title: context.isZh ? '旧值' : 'Old Value',
-            value: _formatBytesForDetail(hit!.oldValue),
-            monospace: true,
-          ),
-          SizedBox(height: 8.r),
-          _DetailBlock(
-            title: context.isZh ? '新值' : 'New Value',
-            value: _formatBytesForDetail(hit!.newValue),
-            active: true,
-            monospace: true,
-          ),
-          if (hit!.instructionText.isNotEmpty) ...<Widget>[
+          if (group!.instructionText.isNotEmpty) ...<Widget>[
             SizedBox(height: 8.r),
             _DetailBlock(
               title: context.isZh ? '指令' : 'Instruction',
-              value: hit!.instructionText.trim(),
+              value: group!.instructionText.trim(),
+              monospace: true,
+            ),
+          ],
+          if (group!.topTransition != null) ...<Widget>[
+            SizedBox(height: 8.r),
+            _DetailBlock(
+              title: context.isZh ? '常见改写' : 'Top Transition',
+              value:
+                  '${group!.topTransition!.summary}\n${context.isZh ? '出现' : 'count'} ${group!.topTransition!.count}',
+              active: true,
               monospace: true,
             ),
           ],
@@ -798,33 +773,23 @@ class _HitDetail extends StatelessWidget {
                   '${_mapAccessType(context, breakpoint!.accessType)} · ${breakpoint!.pauseProcessOnHit ? (context.isZh ? '命中即暂停' : 'Pause On Hit') : (context.isZh ? '仅记录' : 'Record Only')}',
             ),
           ],
+          SizedBox(height: 10.r),
+          Text(
+            context.isZh ? '最近命中' : 'Recent Hits',
+            style: context.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          SizedBox(height: 8.r),
+          ...group!.hits.take(5).map(
+            (hit) => Padding(
+              padding: EdgeInsets.only(bottom: 6.r),
+              child: _StaticHitEntry(hit: hit),
+            ),
+          ),
         ],
       ),
     );
-  }
-
-  String _hex(Uint8List bytes) {
-    if (bytes.isEmpty) {
-      return '--';
-    }
-    return bytes
-        .map((value) => value.toRadixString(16).padLeft(2, '0').toUpperCase())
-        .join(' ');
-  }
-
-  String _formatBytesForDetail(Uint8List bytes) {
-    if (bytes.isEmpty) {
-      return '--';
-    }
-    final values = bytes
-        .map((value) => value.toRadixString(16).padLeft(2, '0').toUpperCase())
-        .toList(growable: false);
-    final lines = <String>[];
-    for (int index = 0; index < values.length; index += 8) {
-      final end = (index + 8 < values.length) ? index + 8 : values.length;
-      lines.add(values.sublist(index, end).join(' '));
-    }
-    return lines.join('\n');
   }
 
   String _mapAccessType(BuildContext context, MemoryBreakpointAccessType type) {
@@ -833,6 +798,55 @@ class _HitDetail extends StatelessWidget {
       MemoryBreakpointAccessType.write => context.isZh ? '写' : 'Write',
       MemoryBreakpointAccessType.readWrite => context.isZh ? '读写' : 'Read/Write',
     };
+  }
+}
+
+class _StaticHitEntry extends StatelessWidget {
+  const _StaticHitEntry({required this.hit});
+
+  final MemoryBreakpointHit hit;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: context.colorScheme.surface.withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(
+          color: context.colorScheme.outlineVariant.withValues(alpha: 0.24),
+        ),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(10.r),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: Text(
+                    _formatTimestamp(hit.timestampMillis),
+                    style: context.textTheme.bodySmall?.copyWith(
+                      color: context.colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                _InlineChip(text: 'TID ${hit.threadId}'),
+              ],
+            ),
+            SizedBox(height: 4.r),
+            Text(
+              _formatTransition(hit.oldValue, hit.newValue),
+              style: context.textTheme.bodySmall?.copyWith(
+                fontFamily: 'monospace',
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -870,12 +884,14 @@ class _DebugStatsBar extends StatelessWidget {
     required this.selectedBreakpoint,
     required this.hitCount,
     required this.breakpointCount,
+    required this.writerCount,
   });
 
   final MemoryBreakpointState? state;
   final MemoryBreakpoint? selectedBreakpoint;
   final int hitCount;
   final int breakpointCount;
+  final int writerCount;
 
   @override
   Widget build(BuildContext context) {
@@ -893,6 +909,11 @@ class _DebugStatsBar extends StatelessWidget {
             MemoryToolResultStatChip(
               label: context.isZh ? '活动' : 'Active',
               value: state?.activeBreakpointCount ?? 0,
+            ),
+            SizedBox(width: 6.r),
+            MemoryToolResultStatChip(
+              label: context.isZh ? '写点' : 'Writers',
+              value: writerCount,
             ),
             SizedBox(width: 6.r),
             MemoryToolResultStatChip(
@@ -1127,23 +1148,96 @@ MemoryBreakpoint? _resolveSelectedBreakpoint({
   return breakpoints.first;
 }
 
-MemoryBreakpointHit? _resolveSelectedHit({
-  required List<MemoryBreakpointHit> hits,
-  required String? selectedHitKey,
+_WriterGroup? _resolveSelectedWriterGroup({
+  required List<_WriterGroup> groups,
+  required String? selectedWriterKey,
 }) {
-  for (final hit in hits) {
-    if (_buildHitKey(hit) == selectedHitKey) {
-      return hit;
+  for (final group in groups) {
+    if (group.key == selectedWriterKey) {
+      return group;
     }
   }
-  if (hits.isEmpty) {
+  if (groups.isEmpty) {
     return null;
   }
-  return hits.first;
+  return groups.first;
 }
 
-String _buildHitKey(MemoryBreakpointHit hit) {
-  return '${hit.breakpointId}_${hit.timestampMillis}_${hit.threadId}_${hit.pc}';
+List<_WriterGroup> _buildWriterGroups(List<MemoryBreakpointHit> hits) {
+  final grouped = <String, List<MemoryBreakpointHit>>{};
+  for (final hit in hits) {
+    grouped.putIfAbsent(_buildWriterKey(hit), () => <MemoryBreakpointHit>[]).add(hit);
+  }
+  final groups = grouped.entries.map((entry) {
+    final sortedHits = entry.value.toList(growable: false)
+      ..sort((left, right) => right.timestampMillis.compareTo(left.timestampMillis));
+    final transitions = _buildTransitions(sortedHits);
+    return _WriterGroup(
+      key: entry.key,
+      pc: sortedHits.first.pc,
+      moduleName: sortedHits.first.moduleName,
+      moduleOffset: sortedHits.first.moduleOffset,
+      instructionText: sortedHits.first.instructionText,
+      hitCount: sortedHits.length,
+      threadCount: sortedHits.map((hit) => hit.threadId).toSet().length,
+      latestTimestamp: sortedHits.first.timestampMillis,
+      hits: sortedHits,
+      topTransition: transitions.isEmpty ? null : transitions.first,
+    );
+  }).toList(growable: false)
+    ..sort((left, right) {
+      final countCompare = right.hitCount.compareTo(left.hitCount);
+      if (countCompare != 0) {
+        return countCompare;
+      }
+      return right.latestTimestamp.compareTo(left.latestTimestamp);
+    });
+  return groups;
+}
+
+List<_WriterTransition> _buildTransitions(List<MemoryBreakpointHit> hits) {
+  final grouped = <String, List<MemoryBreakpointHit>>{};
+  for (final hit in hits) {
+    grouped.putIfAbsent(_formatTransition(hit.oldValue, hit.newValue), () => <MemoryBreakpointHit>[]).add(hit);
+  }
+  final transitions = grouped.entries.map((entry) {
+    final sortedHits = entry.value.toList(growable: false)
+      ..sort((left, right) => right.timestampMillis.compareTo(left.timestampMillis));
+    return _WriterTransition(
+      summary: entry.key,
+      count: sortedHits.length,
+      latestTimestamp: sortedHits.first.timestampMillis,
+    );
+  }).toList(growable: false)
+    ..sort((left, right) {
+      final countCompare = right.count.compareTo(left.count);
+      if (countCompare != 0) {
+        return countCompare;
+      }
+      return right.latestTimestamp.compareTo(left.latestTimestamp);
+    });
+  return transitions;
+}
+
+String _buildWriterKey(MemoryBreakpointHit hit) {
+  return '${hit.pc}_${hit.moduleName}_${hit.moduleOffset}_${hit.instructionText}';
+}
+
+String _formatInstruction(String instruction) {
+  return instruction.trim().replaceAll(RegExp(r'\s+'), ' ');
+}
+
+String _formatTransition(Uint8List oldValue, Uint8List newValue) {
+  return '${_formatBytes(oldValue)} -> ${_formatBytes(newValue)}';
+}
+
+String _formatBytes(Uint8List bytes) {
+  if (bytes.isEmpty) {
+    return '--';
+  }
+  return bytes
+      .map((value) => value.toRadixString(16).padLeft(2, '0').toUpperCase())
+      .join(' ');
 }
 
 String _formatTimestamp(int millis) {
@@ -1155,4 +1249,42 @@ String _formatTimestamp(int millis) {
   final minute = time.minute.toString().padLeft(2, '0');
   final second = time.second.toString().padLeft(2, '0');
   return '$year-$month-$day $hour:$minute:$second';
+}
+
+class _WriterGroup {
+  const _WriterGroup({
+    required this.key,
+    required this.pc,
+    required this.moduleName,
+    required this.moduleOffset,
+    required this.instructionText,
+    required this.hitCount,
+    required this.threadCount,
+    required this.latestTimestamp,
+    required this.hits,
+    required this.topTransition,
+  });
+
+  final String key;
+  final int pc;
+  final String moduleName;
+  final int moduleOffset;
+  final String instructionText;
+  final int hitCount;
+  final int threadCount;
+  final int latestTimestamp;
+  final List<MemoryBreakpointHit> hits;
+  final _WriterTransition? topTransition;
+}
+
+class _WriterTransition {
+  const _WriterTransition({
+    required this.summary,
+    required this.count,
+    required this.latestTimestamp,
+  });
+
+  final String summary;
+  final int count;
+  final int latestTimestamp;
 }
