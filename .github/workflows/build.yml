@@ -42,10 +42,20 @@ jobs:
           distribution: 'temurin'
           java-version: ${{ env.JAVA_VERSION }}
 
+      - name: Cache Flutter SDK
+        id: cache-flutter
+        uses: actions/cache@v4
+        with:
+          path: flutter
+          key: flutter-stable-20260120
+
       - name: Install Flutter
+        if: steps.cache-flutter.outputs.cache-hit != 'true'
         run: |
           git clone https://github.com/flutter/flutter.git -b stable --depth 1
-          echo "${{ github.workspace }}/flutter/bin" >> $GITHUB_PATH
+
+      - name: Add Flutter to PATH
+        run: echo "${{ github.workspace }}/flutter/bin" >> $GITHUB_PATH
 
       - name: Verify Dart SDK version
         run: |
@@ -83,10 +93,20 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Cache Flutter SDK
+        id: cache-flutter
+        uses: actions/cache@v4
+        with:
+          path: flutter
+          key: flutter-stable-20260120
+
       - name: Install Flutter
+        if: steps.cache-flutter.outputs.cache-hit != 'true'
         run: |
           git clone https://github.com/flutter/flutter.git -b stable --depth 1
-          echo "${{ github.workspace }}/flutter/bin" >> $GITHUB_PATH
+
+      - name: Add Flutter to PATH
+        run: echo "${{ github.workspace }}/flutter/bin" >> $GITHUB_PATH
 
       - name: Verify Dart SDK version
         run: |
@@ -128,10 +148,20 @@ jobs:
           distribution: 'temurin'
           java-version: ${{ env.JAVA_VERSION }}
 
+      - name: Cache Flutter SDK
+        id: cache-flutter
+        uses: actions/cache@v4
+        with:
+          path: flutter
+          key: flutter-stable-20260120
+
       - name: Install Flutter
+        if: steps.cache-flutter.outputs.cache-hit != 'true'
         run: |
           git clone https://github.com/flutter/flutter.git -b stable --depth 1
-          echo "${{ github.workspace }}/flutter/bin" >> $GITHUB_PATH
+
+      - name: Add Flutter to PATH
+        run: echo "${{ github.workspace }}/flutter/bin" >> $GITHUB_PATH
 
       - name: Disable analytics
         run: flutter config --no-analytics
@@ -179,14 +209,16 @@ jobs:
         env:
           CAPITALIZED_FLAVOR: ${{ matrix.flavor == 'api100' && 'Api100' || 'Api101' }}
 
-      - name: Verify build outputs
+      - name: List all build outputs
         run: |
-          echo "Checking APK outputs..."
-          find android/app/build/outputs/apk -name "*.apk" -type f || echo "No APK found"
-          if [ "${{ matrix.build-type }}" = "release" ]; then
-            echo "Checking AAB outputs..."
-            find android/app/build/outputs/bundle -name "*.aab" -type f || echo "No AAB found"
-          fi
+          echo "=== Listing all APK files ==="
+          find . -name "*.apk" -type f 2>/dev/null || echo "No APK files found"
+          echo "=== Listing all AAB files ==="
+          find . -name "*.aab" -type f 2>/dev/null || echo "No AAB files found"
+          echo "=== Directory structure of android/app/build/outputs ==="
+          ls -la android/app/build/outputs/ 2>/dev/null || echo "Directory not found"
+          echo "=== Directory structure of build/app/outputs ==="
+          ls -la build/app/outputs/ 2>/dev/null || echo "Directory not found"
 
   manual-build:
     name: Manual Build (${{ inputs.flavor }}-${{ inputs.build_type }})
@@ -203,10 +235,20 @@ jobs:
           distribution: 'temurin'
           java-version: ${{ env.JAVA_VERSION }}
 
+      - name: Cache Flutter SDK
+        id: cache-flutter
+        uses: actions/cache@v4
+        with:
+          path: flutter
+          key: flutter-stable-20260120
+
       - name: Install Flutter
+        if: steps.cache-flutter.outputs.cache-hit != 'true'
         run: |
           git clone https://github.com/flutter/flutter.git -b stable --depth 1
-          echo "${{ github.workspace }}/flutter/bin" >> $GITHUB_PATH
+
+      - name: Add Flutter to PATH
+        run: echo "${{ github.workspace }}/flutter/bin" >> $GITHUB_PATH
 
       - name: Verify Dart SDK version
         run: |
@@ -259,15 +301,39 @@ jobs:
         env:
           CAPITALIZED_FLAVOR: ${{ inputs.flavor == 'api100' && 'Api100' || 'Api101' }}
 
+      - name: Find and list build outputs
+        id: find_outputs
+        run: |
+          echo "=== Finding APK files ==="
+          APK_FILES=$(find . -name "*.apk" -type f 2>/dev/null | head -5)
+          echo "$APK_FILES"
+          
+          echo "=== Finding AAB files ==="
+          AAB_FILES=$(find . -name "*.aab" -type f 2>/dev/null | head -5)
+          echo "$AAB_FILES"
+          
+          # Set output paths for artifact upload
+          APK_DIR=$(find . -name "*.apk" -type f 2>/dev/null | head -1 | xargs dirname || echo "")
+          echo "apk_dir=$APK_DIR" >> $GITHUB_OUTPUT
+          
+          AAB_DIR=$(find . -name "*.aab" -type f 2>/dev/null | head -1 | xargs dirname || echo "")
+          echo "aab_dir=$AAB_DIR" >> $GITHUB_OUTPUT
+
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: JsxposedX-${{ inputs.flavor }}-${{ inputs.build_type }}
-          path: android/app/build/outputs/apk/**/*.apk
+          path: |
+            **/*.apk
+            build/app/outputs/flutter-apk/*.apk
+            android/app/build/outputs/apk/**/*.apk
 
       - name: Upload AAB artifact
         if: inputs.build_type == 'release'
         uses: actions/upload-artifact@v4
         with:
           name: JsxposedX-${{ inputs.flavor }}-bundle
-          path: android/app/build/outputs/bundle/**/*.aab
+          path: |
+            **/*.aab
+            build/app/outputs/bundle/**/*.aab
+            android/app/build/outputs/bundle/**/*.aab
