@@ -25,7 +25,6 @@ on:
         default: 'debug'
 
 env:
-  FLUTTER_VERSION: '3.32.0'  # 包含 Dart 3.9.2
   JAVA_VERSION: '17'
 
 jobs:
@@ -43,13 +42,10 @@ jobs:
           distribution: 'temurin'
           java-version: ${{ env.JAVA_VERSION }}
 
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: 'stable'
-          cache: true
-          cache-key: flutter-${{ env.FLUTTER_VERSION }}
+      - name: Install Flutter
+        run: |
+          git clone https://github.com/flutter/flutter.git -b stable --depth 1
+          echo "${{ github.workspace }}/flutter/bin" >> $GITHUB_PATH
 
       - name: Verify Dart SDK version
         run: |
@@ -87,13 +83,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: 'stable'
-          cache: true
-          cache-key: flutter-${{ env.FLUTTER_VERSION }}
+      - name: Install Flutter
+        run: |
+          git clone https://github.com/flutter/flutter.git -b stable --depth 1
+          echo "${{ github.workspace }}/flutter/bin" >> $GITHUB_PATH
 
       - name: Verify Dart SDK version
         run: |
@@ -135,13 +128,10 @@ jobs:
           distribution: 'temurin'
           java-version: ${{ env.JAVA_VERSION }}
 
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: 'stable'
-          cache: true
-          cache-key: flutter-${{ env.FLUTTER_VERSION }}
+      - name: Install Flutter
+        run: |
+          git clone https://github.com/flutter/flutter.git -b stable --depth 1
+          echo "${{ github.workspace }}/flutter/bin" >> $GITHUB_PATH
 
       - name: Disable analytics
         run: flutter config --no-analytics
@@ -213,13 +203,10 @@ jobs:
           distribution: 'temurin'
           java-version: ${{ env.JAVA_VERSION }}
 
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: 'stable'
-          cache: true
-          cache-key: flutter-${{ env.FLUTTER_VERSION }}
+      - name: Install Flutter
+        run: |
+          git clone https://github.com/flutter/flutter.git -b stable --depth 1
+          echo "${{ github.workspace }}/flutter/bin" >> $GITHUB_PATH
 
       - name: Verify Dart SDK version
         run: |
