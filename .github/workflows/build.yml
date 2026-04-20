@@ -1,0 +1,254 @@
+name: CI Build Check
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      flavor:
+        description: 'Build flavor'
+        required: true
+        type: choice
+        options:
+          - api100
+          - api101
+        default: 'api100'
+      build_type:
+        description: 'Build type'
+        required: true
+        type: choice
+        options:
+          - debug
+          - release
+        default: 'debug'
+
+env:
+  FLUTTER_VERSION: '3.24.0'
+  JAVA_VERSION: '17'
+
+jobs:
+  lint:
+    name: Lint and Analyze
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Generate Pigeon bridge code
+        run: |
+          dart run pigeon --input lib/pigeons/pinia.dart
+          dart run pigeon --input lib/pigeons/status_management.dart
+          dart run pigeon --input lib/pigeons/app.dart
+          dart run pigeon --input lib/pigeons/project.dart
+          dart run pigeon --input lib/pigeons/apk_analysis.dart
+          dart run pigeon --input lib/pigeons/so_analysis.dart
+          dart run pigeon --input lib/pigeons/lsposed.dart
+          dart run pigeon --input lib/pigeons/zygisk_frida.dart
+
+      - name: Flutter analyze
+        run: flutter analyze
+
+      - name: Dart format check
+        run: dart format --output=none --set-exit-if-changed .
+
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Generate Pigeon bridge code
+        run: |
+          dart run pigeon --input lib/pigeons/pinia.dart
+          dart run pigeon --input lib/pigeons/status_management.dart
+          dart run pigeon --input lib/pigeons/app.dart
+          dart run pigeon --input lib/pigeons/project.dart
+          dart run pigeon --input lib/pigeons/apk_analysis.dart
+          dart run pigeon --input lib/pigeons/so_analysis.dart
+          dart run pigeon --input lib/pigeons/lsposed.dart
+          dart run pigeon --input lib/pigeons/zygisk_frida.dart
+
+      - name: Run Flutter tests
+        run: flutter test
+
+  build:
+    name: Build ${{ matrix.flavor }}-${{ matrix.build-type }}
+    runs-on: ubuntu-latest
+    needs: [lint, test]
+    
+    strategy:
+      matrix:
+        flavor: 
+          - api100
+          - api101
+        build-type:
+          - debug
+          - release
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: 'stable'
+          cache: true
+
+      - name: Flutter pub get
+        run: flutter pub get
+
+      - name: Generate Pigeon bridge code
+        run: |
+          dart run pigeon --input lib/pigeons/pinia.dart
+          dart run pigeon --input lib/pigeons/status_management.dart
+          dart run pigeon --input lib/pigeons/app.dart
+          dart run pigeon --input lib/pigeons/project.dart
+          dart run pigeon --input lib/pigeons/apk_analysis.dart
+          dart run pigeon --input lib/pigeons/so_analysis.dart
+          dart run pigeon --input lib/pigeons/lsposed.dart
+          dart run pigeon --input lib/pigeons/zygisk_frida.dart
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Build APK (Release)
+        if: matrix.build-type == 'release'
+        run: |
+          cd android
+          ./gradlew :app:assemble${CAPITALIZED_FLAVOR}Release
+        env:
+          CAPITALIZED_FLAVOR: ${{ matrix.flavor == 'api100' && 'Api100' || 'Api101' }}
+
+      - name: Build APK (Debug)
+        if: matrix.build-type == 'debug'
+        run: |
+          cd android
+          ./gradlew :app:assemble${CAPITALIZED_FLAVOR}Debug
+        env:
+          CAPITALIZED_FLAVOR: ${{ matrix.flavor == 'api100' && 'Api100' || 'Api101' }}
+
+      - name: Build AAB (Release only)
+        if: matrix.build-type == 'release'
+        run: |
+          cd android
+          ./gradlew :app:bundle${CAPITALIZED_FLAVOR}Release
+        env:
+          CAPITALIZED_FLAVOR: ${{ matrix.flavor == 'api100' && 'Api100' || 'Api101' }}
+
+      - name: Verify build outputs
+        run: |
+          echo "Checking APK outputs..."
+          find android/app/build/outputs/apk -name "*.apk" -type f
+          if [ "${{ matrix.build-type }}" = "release" ]; then
+            echo "Checking AAB outputs..."
+            find android/app/build/outputs/bundle -name "*.aab" -type f
+          fi
+
+  manual-build:
+    name: Manual Build (${{ inputs.flavor }}-${{ inputs.build_type }})
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: 'stable'
+          cache: true
+
+      - name: Flutter pub get
+        run: flutter pub get
+
+      - name: Generate Pigeon bridge code
+        run: |
+          dart run pigeon --input lib/pigeons/pinia.dart
+          dart run pigeon --input lib/pigeons/status_management.dart
+          dart run pigeon --input lib/pigeons/app.dart
+          dart run pigeon --input lib/pigeons/project.dart
+          dart run pigeon --input lib/pigeons/apk_analysis.dart
+          dart run pigeon --input lib/pigeons/so_analysis.dart
+          dart run pigeon --input lib/pigeons/lsposed.dart
+          dart run pigeon --input lib/pigeons/zygisk_frida.dart
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Build APK
+        if: inputs.build_type == 'release'
+        run: |
+          cd android
+          ./gradlew :app:assemble${CAPITALIZED_FLAVOR}Release
+        env:
+          CAPITALIZED_FLAVOR: ${{ inputs.flavor == 'api100' && 'Api100' || 'Api101' }}
+
+      - name: Build Debug APK
+        if: inputs.build_type == 'debug'
+        run: |
+          cd android
+          ./gradlew :app:assemble${CAPITALIZED_FLAVOR}Debug
+        env:
+          CAPITALIZED_FLAVOR: ${{ inputs.flavor == 'api100' && 'Api100' || 'Api101' }}
+
+      - name: Build AAB
+        if: inputs.build_type == 'release'
+        run: |
+          cd android
+          ./gradlew :app:bundle${CAPITALIZED_FLAVOR}Release
+        env:
+          CAPITALIZED_FLAVOR: ${{ inputs.flavor == 'api100' && 'Api100' || 'Api101' }}
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: JsxposedX-${{ inputs.flavor }}-${{ inputs.build_type }}
+          path: android/app/build/outputs/apk/**/*.apk
+
+      - name: Upload AAB artifact
+        if: inputs.build_type == 'release'
+        uses: actions/upload-artifact@v4
+        with:
+          name: JsxposedX-${{ inputs.flavor }}-bundle
+          path: android/app/build/outputs/bundle/**/*.aab
