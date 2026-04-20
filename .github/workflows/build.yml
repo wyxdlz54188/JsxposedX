@@ -25,7 +25,7 @@ on:
         default: 'debug'
 
 env:
-  FLUTTER_VERSION: '3.24.0'
+  FLUTTER_VERSION: '3.29.0'  # 包含 Dart SDK 3.9.2+
   JAVA_VERSION: '17'
 
 jobs:
@@ -43,6 +43,9 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: 'stable'
           cache: true
+
+      - name: Disable analytics
+        run: flutter config --no-analytics
 
       - name: Install dependencies
         run: flutter pub get
@@ -78,6 +81,9 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: 'stable'
           cache: true
+
+      - name: Disable analytics
+        run: flutter config --no-analytics
 
       - name: Install dependencies
         run: flutter pub get
@@ -126,6 +132,9 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: 'stable'
           cache: true
+
+      - name: Disable analytics
+        run: flutter config --no-analytics
 
       - name: Flutter pub get
         run: flutter pub get
@@ -198,6 +207,9 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: 'stable'
           cache: true
+
+      - name: Disable analytics
+        run: flutter config --no-analytics
 
       - name: Flutter pub get
         run: flutter pub get
